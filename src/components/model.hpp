@@ -5,8 +5,8 @@
 #ifndef ENGINE3D_SRC_MODEL_HPP
 #define ENGINE3D_SRC_MODEL_HPP
 
-#include "mesh.hpp"
-#include "material.hpp"
+#include "../graphics/mesh.hpp"
+#include "../graphics/material.hpp"
 #include "light.hpp"
 #include "node.hpp"
 #include "animgraph.hpp"

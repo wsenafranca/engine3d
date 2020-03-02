@@ -1,11 +1,10 @@
-#include "application.hpp"
-#include "shaderprogram.hpp"
-#include "resourcemanager.hpp"
-#include "meshbatch.hpp"
-#include "model.hpp"
-#include "meshbuilder.hpp"
-#include "texturebuilder.hpp"
-#include "charactercontroller.hpp"
+#include "app/application.hpp"
+#include "graphics/shaderprogram.hpp"
+#include "graphics/meshbatch.hpp"
+#include "components/model.hpp"
+#include "graphics/meshbuilder.hpp"
+#include "graphics/texturebuilder.hpp"
+#include "components/charactercontroller.hpp"
 
 class MyShader : public Shader {
 public:

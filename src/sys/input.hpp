@@ -7,7 +7,7 @@
 
 #include <bitset>
 #include "messagehandler.hpp"
-#include "singleton.hpp"
+#include "../base/singleton.hpp"
 #include "inputstates.hpp"
 
 class TInput : public MessageHandler {

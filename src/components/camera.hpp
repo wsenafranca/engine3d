@@ -6,7 +6,7 @@
 #define ENGINE3D_SRC_CAMERA_HPP
 
 #include <glm/glm.hpp>
-#include "transform.hpp"
+#include "../math/transform.hpp"
 
 class Camera {
 public:

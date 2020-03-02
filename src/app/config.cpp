@@ -3,7 +3,7 @@
 //
 
 #include "config.hpp"
-#include "../lib/inih/INIReader.h"
+#include "../../lib/inih/INIReader.h"
 #include <fstream>
 
 namespace internal {

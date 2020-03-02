@@ -6,7 +6,7 @@
 #define ENGINE3D_SRC_LOG_HPP
 
 #include <string>
-#include "singleton.hpp"
+#include "../base/singleton.hpp"
 #include <ostream>
 #include <vector>
 #include <any>

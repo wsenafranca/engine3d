@@ -5,15 +5,15 @@
 #ifndef ENGINE3D_SRC_IMPORTER_HPP
 #define ENGINE3D_SRC_IMPORTER_HPP
 
-#include "../node.hpp"
-#include "../model.hpp"
-#include "../meshbuilder.hpp"
+#include "../components/node.hpp"
+#include "../components/model.hpp"
+#include "../graphics/meshbuilder.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <glm/gtc/type_ptr.hpp>
-#include "../texturebuilder.hpp"
-#include "../opengl.hpp"
+#include "../graphics/texturebuilder.hpp"
+#include "../graphics/opengl.hpp"
 
 class Importer {
 public:

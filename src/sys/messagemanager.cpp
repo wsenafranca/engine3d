@@ -4,8 +4,8 @@
 
 #include "messagemanager.hpp"
 #include "messagehandler.hpp"
-#include "opengl.hpp"
-#include "application.hpp"
+#include "../graphics/opengl.hpp"
+#include "../app/application.hpp"
 
 void TMessageManager::AddHandler(int event, MessageHandler *handler) {
     std::unique_lock<std::mutex> lock(mMessageQueueMutex);

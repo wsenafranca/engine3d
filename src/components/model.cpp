@@ -3,7 +3,7 @@
 //
 
 #include "model.hpp"
-#include "internal/importer.hpp"
+#include "../internal/importer.hpp"
 
 Model::Model() : mRootNode(nullptr) {
 

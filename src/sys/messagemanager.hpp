@@ -12,7 +12,7 @@
 #include <mutex>
 #include <list>
 #include "message.hpp"
-#include "singleton.hpp"
+#include "../base/singleton.hpp"
 
 class MessageHandler;
 class GLFWwindow;

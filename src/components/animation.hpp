@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include "node.hpp"
-#include "transform.hpp"
+#include "../math/transform.hpp"
 
 template<class T>
 struct AnimationFrame {

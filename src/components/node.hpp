@@ -7,12 +7,12 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "object.hpp"
+#include "../base/object.hpp"
 #include "light.hpp"
-#include "mesh.hpp"
+#include "../graphics/mesh.hpp"
 #include "camera.hpp"
 #include <list>
-#include "meshbatch.hpp"
+#include "../graphics/meshbatch.hpp"
 #include "bone.hpp"
 
 struct Node {

@@ -8,7 +8,6 @@
 #include <fstream>
 #include "opengl.hpp"
 #include <glm/gtc/type_ptr.hpp>
-#include "extensions.hpp"
 
 ShaderProgram::~ShaderProgram() {
     glDeleteProgram(glProgram);

@@ -5,7 +5,7 @@
 #ifndef ENGINE3D_SRC_MESH_HPP
 #define ENGINE3D_SRC_MESH_HPP
 
-#include "object.hpp"
+#include "../base/object.hpp"
 #include <glm/glm.hpp>
 #include "buffer.hpp"
 #include "vertexarray.hpp"

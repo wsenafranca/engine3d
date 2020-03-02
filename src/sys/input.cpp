@@ -3,8 +3,8 @@
 //
 
 #include "input.hpp"
-#include "opengl.hpp"
-#include "application.hpp"
+#include "../graphics/opengl.hpp"
+#include "../app/application.hpp"
 
 TInput::TInput() {
     std::fill(mAxisState.begin(), mAxisState.end(), 0.0f);

@@ -7,7 +7,7 @@
 
 #include "mesh.hpp"
 #include "shader.hpp"
-#include "lightsystem.hpp"
+#include "../components/lightsystem.hpp"
 #include <queue>
 
 class MeshBatch {

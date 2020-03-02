@@ -3,7 +3,7 @@
 //
 
 #include "animation.hpp"
-#include "internal/importer.hpp"
+#include "../internal/importer.hpp"
 
 Animation::Animation() : mDuration(0), mTicksPerSecond(30) {
 
