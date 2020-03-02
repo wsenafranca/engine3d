@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.15)
+project(Engine3D)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_executable(Engine3D src/main.cpp src/application.cpp src/application.hpp src/object.cpp src/object.hpp src/shaderprogram.cpp src/shaderprogram.hpp src/texture.cpp src/texture.hpp src/buffer.cpp src/buffer.hpp src/material.hpp src/mesh.hpp src/node.hpp src/camera.hpp src/light.hpp src/resourcemanager.hpp src/vertexarray.cpp src/vertexarray.hpp src/messagemanager.cpp src/messagemanager.hpp src/message.hpp src/messagehandler.cpp src/messagehandler.hpp src/events.hpp src/pool.hpp src/material.cpp src/meshbatch.cpp src/meshbatch.hpp src/shader.hpp src/camera.cpp src/extensions.hpp src/bone.hpp src/mesh.cpp src/meshbuilder.cpp src/meshbuilder.hpp src/model.cpp src/model.hpp src/animation.hpp src/animation.cpp src/bitmap.cpp src/bitmap.hpp src/texturebuilder.cpp src/texturebuilder.hpp src/lightsystem.cpp src/lightsystem.hpp src/input.cpp src/input.hpp src/singleton.hpp src/inputstates.hpp src/animgraph.cpp src/animgraph.hpp src/charactercontroller.cpp src/charactercontroller.hpp src/transform.hpp src/appinfo.hpp src/config.cpp src/config.hpp src/log.cpp src/log.hpp src/springarm.cpp src/springarm.hpp)
+
+find_package(OpenGL)
+target_link_libraries(Engine3D ${OPENGL_gl_LIBRARY})
+target_link_libraries(Engine3D ${OPENGL_glu_LIBRARY})
+
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(lib/glfw)
+target_link_libraries(Engine3D glfw)
+include_directories(lib/glfw/include)
+
+add_definitions(-DGLEW_STATIC)
+option(glew-cmake_BUILD_SHARED "" OFF)
+add_subdirectory(lib/glew/build/cmake)
+set(GLEW_INCLUDE_PATH lib/glew/include)
+set(GLEW_LIBRARY glew_s)
+target_link_libraries(Engine3D ${GLEW_LIBRARY})
+include_directories(${GLEW_INCLUDE_PATH})
+
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+add_subdirectory(lib/assimp)
+target_link_libraries(Engine3D assimp)
+include_directories(lib/assimp/include)
+
+add_definitions(-DGLM_FORCE_RADIANS -DGLM_ENABLE_EXPERIMENTAL)
+include_directories(lib/glm)
+include_directories(lib/filesystem)
+include_directories(lib/stb)
