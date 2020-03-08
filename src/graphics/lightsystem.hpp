@@ -5,7 +5,7 @@
 #ifndef ENGINE3D_SRC_LIGHTSYSTEM_HPP
 #define ENGINE3D_SRC_LIGHTSYSTEM_HPP
 
-#include "../graphics/texture.hpp"
+#include "texture.hpp"
 #include "light.hpp"
 #include <unordered_map>
 #include <string>

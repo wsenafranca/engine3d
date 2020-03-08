@@ -78,7 +78,7 @@ int Application::Exec(int argc, char** argv) {
 
     OnCreate();
 
-    glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     double t0 = glfwGetTime();
     double t;
     float dt;

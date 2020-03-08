@@ -5,8 +5,8 @@
 #ifndef ENGINE3D_SRC_IMPORTER_HPP
 #define ENGINE3D_SRC_IMPORTER_HPP
 
-#include "../components/node.hpp"
-#include "../components/model.hpp"
+#include "../graphics/node.hpp"
+#include "../graphics/model.hpp"
 #include "../graphics/meshbuilder.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "../graphics/texturebuilder.hpp"
 #include "../graphics/opengl.hpp"
+#include "animations/animation.hpp"
 
 class Importer {
 public:
@@ -72,8 +73,8 @@ public:
     }
 
 protected:
-    static Node* BuildNode(const aiNode *pNode) {
-        auto node = new Node();
+    static std::shared_ptr<Node> BuildNode(const aiNode *pNode) {
+        auto node = std::make_shared<Node>();
         node->name = pNode->mName.C_Str();
         for(size_t i = 0; i < pNode->mNumChildren; i++) {
             node->children.push_back(BuildNode(pNode->mChildren[i]));
@@ -81,13 +82,20 @@ protected:
 
         return node;
     }
-    static void LoadNode(Node* node, Model *model, const aiNode *pNode, const aiScene *pScene) {
+    static void LoadNode(const std::shared_ptr<Node> &node, Model *model, const aiNode *pNode, const aiScene *pScene) {
         for(size_t i = 0; i < pNode->mNumMeshes; i++) {
             node->meshes.push_back(model->GetMesh(pNode->mMeshes[i]));
         }
 
         aiMatrix4x4 transformation = pNode->mTransformation;
-        node->matrix = glm::make_mat4(&transformation.Transpose().a1);
+        aiVector3D t, s;
+        aiQuaternion r;
+        transformation.Decompose(s, r, t);
+        //model->SetNodeTransform(node->name, glm::make_mat4(&transformation.Transpose().a1));
+        model->SetNodeTransform(node->name, Transform(
+                glm::vec3(t.x, t.y, t.z),
+                glm::quat(r.w, r.x, r.y, r.z),
+                glm::vec3(s.x, s.y, s.z)));
 
         uint32_t i = 0;
         for(auto& child : node->children) {
@@ -96,7 +104,7 @@ protected:
         }
     }
 
-    static Material LoadMaterial(Model* model, const aiMaterial *pMaterial) {
+    static std::shared_ptr<Material> LoadMaterial(Model* model, const aiMaterial *pMaterial) {
         MaterialBuilder builder;
 
         aiColor3D outColor;
@@ -295,7 +303,7 @@ protected:
 
         builder.SetMaterial(LoadMaterial(model, pScene->mMaterials[pMesh->mMaterialIndex]));
 
-        auto mesh = new Mesh(&builder);
+        auto mesh = builder.Build();
         mesh->name = pMesh->mName.C_Str();
         model->AddMesh(mesh);
     }

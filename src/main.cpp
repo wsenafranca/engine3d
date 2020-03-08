@@ -1,10 +1,12 @@
 #include "app/application.hpp"
 #include "graphics/shaderprogram.hpp"
 #include "graphics/meshbatch.hpp"
-#include "components/model.hpp"
+#include "graphics/model.hpp"
 #include "graphics/meshbuilder.hpp"
 #include "graphics/texturebuilder.hpp"
-#include "components/charactercontroller.hpp"
+#include <controllers/charactercontroller.hpp>
+#include <controllers/animcontroller.hpp>
+#include <graphics/modelinstance.hpp>
 
 class MyShader : public Shader {
 public:
@@ -101,41 +103,98 @@ protected:
 
         mModel = new Model("data/models/xbot.fbx");
         mPlayer = mModel->CreateInstance();
-        mAnimGraph = new AnimGraph();
-        auto idleState = mAnimGraph->AddAnimation("idle", new Animation("data/animations/xbot_idle.fbx"));
+        mAnimController = std::make_shared<AnimController>(mPlayer);
+        auto idleState = mAnimController->AddAnimation("idle", new Animation("data/animations/xbot_idle.fbx"));
         idleState->playMode = ANIM_PLAY_MODE_LOOP;
         idleState->transitions = {
-            {"running",
+            {"moveForward",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return graph->GetProperty<bool>("isMoving", false);
+                    return graph->GetProperty<bool>("moveForward").value_or(false);
                 }
+            },
+            {"moveRightStrafe",
+                    [](ANIM_STATE_TRANSITION_FUNC) {
+                        return graph->GetProperty<bool>("moveRightStrafe").value_or(false);
+                    }
+            },
+            {"moveLeftStrafe",
+                    [](ANIM_STATE_TRANSITION_FUNC) {
+                        return graph->GetProperty<bool>("moveLeftStrafe").value_or(false);
+                    }
+            },
+            {"moveBackward",
+                    [](ANIM_STATE_TRANSITION_FUNC) {
+                        return graph->GetProperty<bool>("moveBackward").value_or(false);
+                    }
             },
             {"jumpUp",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return graph->GetProperty<bool>("jumping", false);
+                    return graph->GetProperty<bool>("jumping").value_or(false);
                 }
             }
         };
-        auto runningState = mAnimGraph->AddAnimation("running", new Animation("data/animations/xbot_running.fbx"));
-        runningState->playMode = ANIM_PLAY_MODE_LOOP;
-        runningState->transitions = {
+        auto moveForwardState = mAnimController->AddAnimation("moveForward", new Animation("data/animations/xbot_running.fbx"));
+        moveForwardState->playMode = ANIM_PLAY_MODE_LOOP;
+        moveForwardState->transitions = {
             {"idle",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return !graph->GetProperty<bool>("isMoving", false);
+                    return !graph->GetProperty<bool>("moveForward").value_or(false);
                 }
             },
             {"runningJumpUp",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return graph->GetProperty<bool>("jumping", false);
+                    return graph->GetProperty<bool>("jumping").value_or(false);
                 }
             }
         };
-        auto jumpUpState = mAnimGraph->AddAnimation("jumpUp", new Animation("data/animations/xbot_jump_up.fbx"));
+        auto moveRightStrafeState = mAnimController->AddAnimation("moveRightStrafe", new Animation("data/animations/xbot_right_strafe.fbx"));
+        moveRightStrafeState->playMode = ANIM_PLAY_MODE_LOOP;
+        moveRightStrafeState->transitions = {
+                {"idle",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return !graph->GetProperty<bool>("moveRightStrafe").value_or(false);
+                        }
+                },
+                {"runningJumpUp",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return graph->GetProperty<bool>("jumping").value_or(false);
+                        }
+                }
+        };
+        auto moveLeftStrafeState = mAnimController->AddAnimation("moveLeftStrafe", new Animation("data/animations/xbot_left_strafe.fbx"));
+        moveLeftStrafeState->playMode = ANIM_PLAY_MODE_LOOP;
+        moveLeftStrafeState->transitions = {
+                {"idle",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return !graph->GetProperty<bool>("moveLeftStrafe").value_or(false);
+                        }
+                },
+                {"runningJumpUp",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return graph->GetProperty<bool>("jumping").value_or(false);
+                        }
+                }
+        };
+        auto moveBackwardState = mAnimController->AddAnimation("moveBackward", new Animation("data/animations/xbot_running_backward.fbx"));
+        moveBackwardState->playMode = ANIM_PLAY_MODE_LOOP;
+        moveBackwardState->transitions = {
+                {"idle",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return !graph->GetProperty<bool>("moveBackward").value_or(false);
+                        }
+                },
+                {"runningJumpUp",
+                        [](ANIM_STATE_TRANSITION_FUNC) {
+                            return graph->GetProperty<bool>("jumping").value_or(false);
+                        }
+                }
+        };
+        auto jumpUpState = mAnimController->AddAnimation("jumpUp", new Animation("data/animations/xbot_jump_up.fbx"));
         jumpUpState->playMode = ANIM_PLAY_MODE_NORMAL;
         jumpUpState->transitions = {
             {"jumpDown",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return frame > 3 && (graph->GetProperty<bool>("falling", false));
+                    return frame > 3 && (graph->GetProperty<bool>("falling").value_or(false));
                 }
             }
         };
@@ -145,38 +204,38 @@ protected:
         jumpUpState->startCallback = [this]() {
             this->mPlayerController.SetMoveEnabled(false);
         };
-        auto jumpDownState = mAnimGraph->AddAnimation("jumpDown", new Animation("data/animations/xbot_jump_down.fbx"));
+        auto jumpDownState = mAnimController->AddAnimation("jumpDown", new Animation("data/animations/xbot_jump_down.fbx"));
         jumpDownState->playMode = ANIM_PLAY_MODE_NORMAL;
         jumpDownState->transitions = {
             {"landing",
                 [](ANIM_STATE_TRANSITION_FUNC) {
-                    return graph->GetProperty<bool>("grounded", false);
+                    return graph->GetProperty<bool>("grounded").value_or(false);
                 }
             }
         };
-        auto landingState = mAnimGraph->AddAnimation("landing", new Animation("data/animations/xbot_landing.fbx"));
+        auto landingState = mAnimController->AddAnimation("landing", new Animation("data/animations/xbot_landing.fbx"));
         landingState->playMode = ANIM_PLAY_MODE_NORMAL;
         landingState->transitions = {
                 {"idle",
                             [](ANIM_STATE_TRANSITION_FUNC) {
-                                return state->isFinished && !graph->GetProperty<bool>("isMoving", false);
+                                return state->isFinished && !graph->GetProperty<bool>("isMoving").value_or(false);
                             }
                 },
-                {"running",
+                {"moveForward",
                         [](ANIM_STATE_TRANSITION_FUNC) {
-                            return state->isFinished && graph->GetProperty<bool>("isMoving", false);
+                            return state->isFinished && graph->GetProperty<bool>("isMoving").value_or(false);
                         }
                 }
         };
         landingState->endCallback = [this]() {
             this->mPlayerController.SetMoveEnabled(true);
         };
-        auto runningJumpUpState = mAnimGraph->AddAnimation("runningJumpUp", new Animation("data/animations/xbot_jump_up.fbx"));
+        auto runningJumpUpState = mAnimController->AddAnimation("runningJumpUp", new Animation("data/animations/xbot_jump_up.fbx"));
         runningJumpUpState->playMode = ANIM_PLAY_MODE_NORMAL;
         runningJumpUpState->transitions = {
                 {"runningJumpDown",
                         [](ANIM_STATE_TRANSITION_FUNC) {
-                            return frame > 3 && (graph->GetProperty<bool>("falling", false));
+                            return frame > 3 && (graph->GetProperty<bool>("falling").value_or(false));
                         }
                 }
         };
@@ -186,26 +245,25 @@ protected:
         runningJumpUpState->startCallback = [this]() {
             this->mPlayerController.SetMoveEnabled(false);
         };
-        auto runningJumpDownState = mAnimGraph->AddAnimation("runningJumpDown", new Animation("data/animations/xbot_jump_down.fbx"));
+        auto runningJumpDownState = mAnimController->AddAnimation("runningJumpDown", new Animation("data/animations/xbot_jump_down.fbx"));
         runningJumpDownState->playMode = ANIM_PLAY_MODE_NORMAL;
         runningJumpDownState->transitions = {
                 {"landing",
                         [](ANIM_STATE_TRANSITION_FUNC) {
-                            return graph->GetProperty<bool>("grounded", false);
+                            return graph->GetProperty<bool>("grounded").value_or(false);
                         }
                 }
         };
         runningJumpDownState->endCallback = [this]() {
             this->mPlayerController.SetMoveEnabled(true);
         };
-        mPlayer->SetAnimGraph(mAnimGraph);
 
         mCamera = new Camera(glm::radians(45.0f), 4.0f/3.0f, 0.1f, 100.0f);
         mCamera->restPosition = glm::vec3(0.0f, 5.0f, -8.0f);
         mCamera->position = mCamera->restPosition;
         mCamera->LookAt(glm::vec3(0.0f, 1.0f, 0.0f));
 
-        mPlayer->GetModel()->GetRootNode()->camera = mCamera;
+        mPlayer->GetModel()->GetRootNode()->camera.reset(mCamera);
 
         mLightSystem.CreateDirectionalLight("DirLight", glm::vec3(0.2f), glm::vec3(-0.2f, -1.0f, -0.3f));
         mLightSystem.CreatePointLight("PointLight", glm::vec3(0.7f, 0.1f, 0.0f), glm::vec3(4.0f, 4.0f, -4.0f));
@@ -304,6 +362,9 @@ protected:
                 move = glm::normalize(move);
             }
             move*=6.0f;
+            if(move.z < 0) {
+                move.z *= 0.5f;
+            }
             mPlayerController.Move(move);
 
             if(Input::GetKeyDown(KEY_SPACE) && !startJumping) {
@@ -328,22 +389,26 @@ protected:
 
         mSpotLight->direction = mPlayerController.GetPosition() - mSpotLight->position;
 
-        mAnimGraph->SetProperty("grounded", mPlayerController.IsGrounded());
-        mAnimGraph->SetProperty("isMoving", mPlayerController.IsMoving());
-        mAnimGraph->SetProperty("jumping", startJumping);
-        mAnimGraph->SetProperty("falling", mPlayerController.IsFalling());
+        mAnimController->SetProperty("grounded", mPlayerController.IsGrounded());
+        mAnimController->SetProperty("isMoving", mPlayerController.IsMoving());
+        mAnimController->SetProperty("jumping", startJumping);
+        mAnimController->SetProperty("falling", mPlayerController.IsFalling());
+        mAnimController->SetProperty("moveForward", Input::GetAxis(INPUT_AXIS_Y) < 0);
+        mAnimController->SetProperty("moveBackward", Input::GetAxis(INPUT_AXIS_Y) > 0);
+        mAnimController->SetProperty("moveRightStrafe", Input::GetAxis(INPUT_AXIS_X) > 0);
+        mAnimController->SetProperty("moveLeftStrafe", Input::GetAxis(INPUT_AXIS_X) < 0);
 
-        mPlayer->Update(dt);
+        mAnimController->Update(dt);
 
         mBatch.Begin(mCamera, mShader);
-        mBatch.Render(mFloor, glm::mat4(1.0f));
+        mBatch.Render(mFloor.get(), glm::mat4(1.0f));
         mPlayer->Render(&mBatch);
         mBatch.End();
 
         glCullFace(GL_FRONT);
         glDepthFunc(GL_LEQUAL);
         mBatch.Begin(mCamera, mSkyBoxShader);
-        mBatch.Render(mSkyBox, glm::mat4(1.0f));
+        mBatch.Render(mSkyBox.get(), glm::mat4(1.0f));
         mBatch.End();
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);
@@ -353,8 +418,7 @@ protected:
         delete mShader;
         delete mSkyBoxShader;
         delete mCamera;
-        delete mFloor;
-        delete mSkyBox;
+        //delete mModel;
     }
 
     MeshBatch mBatch;
@@ -364,11 +428,11 @@ protected:
     LightSystem mLightSystem;
     Light* mSpotLight{nullptr};
     Model *mModel{nullptr};
-    ModelInstance* mPlayer{nullptr};
+    std::shared_ptr<ModelInstance> mPlayer;
     CharacterController mPlayerController;
-    AnimGraph* mAnimGraph{nullptr};
-    Mesh* mFloor{nullptr};
-    Mesh* mSkyBox{nullptr};
+    std::shared_ptr<AnimController> mAnimController;
+    std::shared_ptr<Mesh> mFloor;
+    std::shared_ptr<Mesh> mSkyBox;
 };
 
 int main(int argc, char** argv) {

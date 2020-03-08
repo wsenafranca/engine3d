@@ -30,8 +30,8 @@ public:
     MeshBuilder& SetIndices(const std::vector<uint32_t>& indices);
     [[nodiscard]] const std::vector<uint32_t> &GetIndices() const;
 
-    MeshBuilder& SetMaterial(const Material& material);
-    [[nodiscard]] const Material &GetMaterial() const;
+    MeshBuilder& SetMaterial(const std::shared_ptr<Material>& material);
+    [[nodiscard]] const std::shared_ptr<Material> &GetMaterial() const;
 
     MeshBuilder& SetFlipTextureCoord(bool flipX, bool flipY);
     [[nodiscard]] bool IsFlipTextureCoordX() const;
@@ -44,7 +44,7 @@ public:
     MeshBuilder& SetBox(const glm::vec3& size);
     MeshBuilder& SetPlane(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4);
 
-    [[nodiscard]] Mesh* Build();
+    std::shared_ptr<Mesh> Build();
 
     friend class Mesh;
 private:
@@ -55,7 +55,7 @@ private:
     std::vector<float> mWeights;
     std::vector<float> mTangents;
     std::vector<uint32_t> mIndices;
-    struct Material mMaterial;
+    std::shared_ptr<Material> mMaterial;
     uint32_t mAttributeBits{0};
     uint32_t mRenderMode{4};
     bool mFlipTextureCoordX{false};

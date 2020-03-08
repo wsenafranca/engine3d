@@ -118,20 +118,20 @@ MaterialBuilder& MaterialBuilder::SetBackfaceCulling(bool backfaceCulling) {
     return *this;
 }
 
-Material MaterialBuilder::Build() {
-    Material material;
-    material.diffuseTexture = mDiffuseTexture;
-    material.specularTexture = mSpecularTexture;
-    material.occlusionTexture = mOcclusionTexture;
-    material.normalTexture = mNormalTexture;
-    material.heightTexture = mHeightTexture;
-    material.diffuseColor = mDiffuseColor;
-    material.specularColor = mSpecularColor;
-    material.ambientColor = mAmbientColor;
-    material.shininess = mShininess;
-    material.opacity = mOpacity;
-    material.blendMode = mBlendMode;
-    material.backfaceCulling = mBackfaceCulling;
-    material.textureBits = mTextureBits;
+std::shared_ptr<Material> MaterialBuilder::Build() {
+    auto material = std::make_shared<Material>();
+    material->diffuseTexture = mDiffuseTexture;
+    material->specularTexture = mSpecularTexture;
+    material->occlusionTexture = mOcclusionTexture;
+    material->normalTexture = mNormalTexture;
+    material->heightTexture = mHeightTexture;
+    material->diffuseColor = mDiffuseColor;
+    material->specularColor = mSpecularColor;
+    material->ambientColor = mAmbientColor;
+    material->shininess = mShininess;
+    material->opacity = mOpacity;
+    material->blendMode = mBlendMode;
+    material->backfaceCulling = mBackfaceCulling;
+    material->textureBits = mTextureBits;
     return material;
 }

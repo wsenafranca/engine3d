@@ -31,14 +31,14 @@ void MeshBatch::Flush() {
         if(cmd.boneMatrices) {
             pShader->SetBoneMatrices(*cmd.boneMatrices);
         }
-        pShader->SetMaterial(mesh->material);
+        pShader->SetMaterial(*mesh->material);
         pShader->SetAttributeBits(mesh->attributeBits);
         mesh->vertexArray->Bind();
-        if(!mesh->material.backfaceCulling) {
+        if(!mesh->material->backfaceCulling) {
             glDisable(GL_CULL_FACE);
         }
         glDrawElementsBaseVertex(mesh->renderMode, mesh->indexCount, mesh->indexType, nullptr, 0);
-        if(!mesh->material.backfaceCulling) {
+        if(!mesh->material->backfaceCulling) {
             glEnable(GL_CULL_FACE);
         }
         mesh->vertexArray->Unbind();

@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include "material.hpp"
-#include "../components/light.hpp"
+#include "light.hpp"
 
 class ShaderProgram {
 public:

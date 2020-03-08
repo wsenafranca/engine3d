@@ -2,13 +2,13 @@
 // Created by Washington on 25/02/2020.
 //
 
-#ifndef ENGINE3D_SRC_ANIMATION_HPP
-#define ENGINE3D_SRC_ANIMATION_HPP
+#ifndef ENGINE3D_SRC_ANIMATIONS_ANIMATION_HPP
+#define ENGINE3D_SRC_ANIMATIONS_ANIMATION_HPP
 
 #include <glm/glm.hpp>
 #include <string>
-#include "node.hpp"
-#include "../math/transform.hpp"
+#include "graphics/node.hpp"
+#include "math/transform.hpp"
 
 template<class T>
 struct AnimationFrame {
@@ -53,4 +53,4 @@ private:
     float mTicksPerSecond;
 };
 
-#endif //ENGINE3D_SRC_ANIMATION_HPP
+#endif //ENGINE3D_SRC_ANIMATIONS_ANIMATION_HPP

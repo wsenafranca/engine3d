@@ -74,7 +74,7 @@ public:
     [[nodiscard]] bool IsBackfaceCulling() const;
     MaterialBuilder& SetBackfaceCulling(bool backfaceCulling);
 
-    Material Build();
+    std::shared_ptr<Material> Build();
 private:
     std::shared_ptr<Texture> mDiffuseTexture{nullptr};
     std::shared_ptr<Texture> mSpecularTexture{nullptr};

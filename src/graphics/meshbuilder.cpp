@@ -4,6 +4,7 @@
 
 #include "meshbuilder.hpp"
 #include <numeric>
+#include "opengl.hpp"
 
 MeshBuilder &MeshBuilder::SetPositions(const std::vector<float> &positions) {
     mPositions = positions;
@@ -74,12 +75,12 @@ const std::vector<uint32_t> &MeshBuilder::GetIndices() const {
     return mIndices;
 }
 
-MeshBuilder &MeshBuilder::SetMaterial(const Material &material) {
+MeshBuilder &MeshBuilder::SetMaterial(const std::shared_ptr<Material> &material) {
     mMaterial = material;
     return *this;
 }
 
-const Material &MeshBuilder::GetMaterial() const {
+const std::shared_ptr<Material> &MeshBuilder::GetMaterial() const {
     return mMaterial;
 }
 
@@ -106,8 +107,90 @@ uint32_t MeshBuilder::GetRenderMode() const {
     return mRenderMode;
 }
 
-Mesh *MeshBuilder::Build() {
-    return new Mesh(this);
+std::shared_ptr<Mesh> MeshBuilder::Build() {
+    auto mesh = std::make_shared<Mesh>();
+
+    mesh->vertexArray = std::make_unique<VertexArray>();
+    mesh->vertexArray->Bind();
+
+    if((mAttributeBits & ATTRIBUTE_POSITION_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        buffer->SetData(mPositions.size()*sizeof(mPositions[0]), mPositions.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_POSITION_INDEX);
+        mesh->vertexArray->SetAttribPointer(ATTRIBUTE_POSITION_INDEX, 3, GL_FLOAT, false);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    if((mAttributeBits & ATTRIBUTE_NORMAL_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        buffer->SetData(mNormals.size()*sizeof(mNormals[0]), mNormals.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_NORMAL_INDEX);
+        mesh->vertexArray->SetAttribPointer(ATTRIBUTE_NORMAL_INDEX, 3, GL_FLOAT, false);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    if((mAttributeBits & ATTRIBUTE_TEXCOORD_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        if(mFlipTextureCoordX) {
+            for(size_t i = 0; i < mTexCoords.size(); i+=2) {
+                mTexCoords[i] = 1.0f - mTexCoords[i];
+            }
+        }
+        if(mFlipTextureCoordY) {
+            for(size_t i = 1; i < mTexCoords.size(); i+=2) {
+                mTexCoords[i] = 1.0f - mTexCoords[i];
+            }
+        }
+        buffer->SetData(mTexCoords.size()*sizeof(mTexCoords[0]), mTexCoords.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_TEXCOORD_INDEX);
+        mesh->vertexArray->SetAttribPointer(ATTRIBUTE_TEXCOORD_INDEX, 2, GL_FLOAT, false);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    if((mAttributeBits & ATTRIBUTE_JOINTS_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        buffer->SetData(mJoints.size()*sizeof(mJoints[0]), mJoints.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_JOINTS_INDEX);
+        mesh->vertexArray->SetAttribIPointer(ATTRIBUTE_JOINTS_INDEX, 4, GL_INT);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    if((mAttributeBits & ATTRIBUTE_WEIGHTS_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        buffer->SetData(mWeights.size()*sizeof(mWeights[0]), mWeights.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_WEIGHTS_INDEX);
+        mesh->vertexArray->SetAttribPointer(ATTRIBUTE_WEIGHTS_INDEX, 4, GL_FLOAT, false);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    if((mAttributeBits & ATTRIBUTE_TANGENT_BITS)) {
+        auto buffer = new Buffer(GL_ARRAY_BUFFER);
+        buffer->Bind();
+        buffer->SetData(mTangents.size()*sizeof(mTangents[0]), mTangents.data(), GL_STATIC_DRAW);
+        mesh->vertexArray->EnableAttrib(ATTRIBUTE_TANGENT_INDEX);
+        mesh->vertexArray->SetAttribPointer(ATTRIBUTE_TANGENT_INDEX, 4, GL_FLOAT, false);
+        mesh->buffers.emplace_back(buffer);
+    }
+
+    auto buffer = new Buffer(GL_ELEMENT_ARRAY_BUFFER);
+    buffer->Bind();
+    buffer->SetData(mIndices.size()*sizeof(mIndices[0]), mIndices.data(), GL_STATIC_DRAW);
+    mesh->buffers.emplace_back(buffer);
+
+    mesh->vertexArray->Unbind();
+
+    mesh->renderMode = mRenderMode;
+    mesh->indexType = GL_UNSIGNED_INT;
+    mesh->indexCount = mIndices.size();
+    mesh->material = mMaterial;
+    mesh->attributeBits = mAttributeBits;
+
+    return mesh;
 }
 
 MeshBuilder &MeshBuilder::SetQuad(float width, float height) {

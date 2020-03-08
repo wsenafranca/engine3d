@@ -9,21 +9,20 @@
 #include <glm/gtc/quaternion.hpp>
 #include "../base/object.hpp"
 #include "light.hpp"
-#include "../graphics/mesh.hpp"
+#include "mesh.hpp"
 #include "camera.hpp"
 #include <list>
-#include "../graphics/meshbatch.hpp"
+#include "meshbatch.hpp"
 #include "bone.hpp"
 
 struct Node {
     std::string name;
-    Light* light{nullptr};
-    std::list<Mesh*> meshes;
-    Camera* camera{nullptr};
+    std::shared_ptr<Light> light;
+    std::vector< std::shared_ptr<Mesh> > meshes;
+    std::shared_ptr<Camera> camera;
     Node* parent{nullptr};
-    std::list<Node*> children;
-    Bone* bone{nullptr};
-    glm::mat4 matrix{1.0f};
+    std::list< std::shared_ptr<Node> > children;
+    std::shared_ptr<Bone> bone;
 };
 
 #endif //ENGINE3D_SRC_NODE_HPP

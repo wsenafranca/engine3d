@@ -34,11 +34,9 @@ enum MeshAttributeBits {
 };
 
 struct Mesh {
-    explicit Mesh(MeshBuilder* builder);
-
     std::string name;
     std::vector< std::unique_ptr<Buffer> > buffers;
-    Material material;
+    std::shared_ptr<Material> material;
     uint32_t renderMode{4};
     uint32_t indexType{5125};
     uint32_t indexCount{0};

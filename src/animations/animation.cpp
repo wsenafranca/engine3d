@@ -3,7 +3,7 @@
 //
 
 #include "animation.hpp"
-#include "../internal/importer.hpp"
+#include "internal/importer.hpp"
 
 Animation::Animation() : mDuration(0), mTicksPerSecond(30) {
 
@@ -63,14 +63,11 @@ glm::quat Animation::GetRotationAt(const AnimationChannel& channel, float time) 
     a = glm::clamp(a, 0.0f, 1.0f);
     const auto& start = channel.rotationKeys[lastIndex].value;
     const auto& end = channel.rotationKeys[nextIndex].value;
-    return glm::normalize(glm::slerp(start, end, a));
+    return glm::slerp(start, end, a);
 }
 
 glm::vec3 Animation::GetScaleAt(const AnimationChannel& channel, float time) const {
     if(channel.scaleKeys.empty()) return glm::vec3(1.0f);
-    if(channel.scaleKeys.size() == 1) return channel.scaleKeys.front().value;
-
-    if(channel.scaleKeys.empty()) return glm::vec3(0.0f);
     if(channel.scaleKeys.size() == 1) return channel.scaleKeys.front().value;
 
     uint32_t lastIndex;

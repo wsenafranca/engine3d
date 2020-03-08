@@ -5,8 +5,8 @@
 #ifndef ENGINE3D_SRC_SHADER_HPP
 #define ENGINE3D_SRC_SHADER_HPP
 
-#include "../components/camera.hpp"
-#include "../components/light.hpp"
+#include "camera.hpp"
+#include "light.hpp"
 #include "shaderprogram.hpp"
 #include <list>
 

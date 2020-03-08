@@ -16,6 +16,57 @@ struct Transform {
 
     Transform() = default;
     Transform(const Transform& rhs) = default;
+    Transform(const glm::vec3& translation, const glm::quat& rotation, const glm::vec3& scale) :
+            position(translation), rotation(rotation), scale(scale) {}
+    Transform(const glm::mat4& matrix) {
+        auto m = matrix;
+        position.x = m[3][0];
+        position.y = m[3][1];
+        position.z = m[3][2];
+
+        m[3][0] = 0;
+        m[3][1] = 0;
+        m[3][2] = 0;
+        scale.x = glm::length(glm::vec3(m[0][0], m[1][0], m[2][0]));
+        scale.y = glm::length(glm::vec3(m[0][1], m[1][1], m[2][1]));
+        scale.z = glm::length(glm::vec3(m[0][2], m[1][2], m[2][2]));
+
+        if(scale.x != 0.0f) {
+            m[0][0]/=scale.x;
+            m[1][0]/=scale.x;
+            m[2][0]/=scale.x;
+        } else {
+            m[0][0] = m[1][0] = m[2][0] = 0;
+        }
+        if(scale.y != 0.0f) {
+            m[0][1]/=scale.y;
+            m[1][1]/=scale.y;
+            m[2][1]/=scale.y;
+        } else {
+            m[0][1] = m[1][1] = m[2][1] = 0;
+        }
+        if(scale.z != 0.0f) {
+            m[0][2]/=scale.z;
+            m[1][2]/=scale.z;
+            m[2][2]/=scale.z;
+        } else {
+            m[0][2] = m[1][2] =m[2][2] = 0;
+        }
+
+        rotation = glm::quat_cast(m);
+    }
+
+    inline void Set(const Transform &rhs) {
+        position = rhs.position;
+        rotation = rhs.rotation;
+        scale = rhs.scale;
+    }
+
+    inline void Set(const glm::vec3& translation_, const glm::quat& rotation_, const glm::vec3& scale_) {
+        position = translation_;
+        rotation = rotation_;
+        scale = scale_;
+    }
 
     inline void Translate(const glm::vec3& translation_) {
         position += translation_;
@@ -29,50 +80,25 @@ struct Transform {
         scale *= scale_;
     }
 
+    inline void Lerp(const Transform& rhs, float a) {
+        position = glm::mix(position, rhs.position, a);
+        rotation = glm::slerp(rotation, rhs.rotation, a);
+        scale = glm::mix(scale, rhs.scale, a);
+    }
+
     [[nodiscard]] inline glm::mat4 ToMatrix() const {
         static const glm::mat4 I{1.0f};
         return glm::translate(I, position)*glm::mat4_cast(rotation)*glm::scale(I, scale);
     }
 
-    inline static Transform Decompose(const glm::mat4& matrix) {
-        auto m = matrix;
-        Transform t;
-        t.position.x = m[3][0];
-        t.position.y = m[3][1];
-        t.position.z = m[3][2];
+    inline bool operator==(const Transform &rhs) const {
+        return position == rhs.position &&
+               rotation == rhs.rotation &&
+               scale == rhs.scale;
+    }
 
-        m[3][0] = 0;
-        m[3][1] = 0;
-        m[3][2] = 0;
-        t.scale.x = glm::length(glm::vec3(m[0][0], m[1][0], m[2][0]));
-        t.scale.y = glm::length(glm::vec3(m[0][1], m[1][1], m[2][1]));
-        t.scale.z = glm::length(glm::vec3(m[0][2], m[1][2], m[2][2]));
-
-        if(t.scale.x != 0.0f) {
-            m[0][0]/=t.scale.x;
-            m[1][0]/=t.scale.x;
-            m[2][0]/=t.scale.x;
-        } else {
-            m[0][0] = m[1][0] = m[2][0] = 0;
-        }
-        if(t.scale.y != 0.0f) {
-            m[0][1]/=t.scale.y;
-            m[1][1]/=t.scale.y;
-            m[2][1]/=t.scale.y;
-        } else {
-            m[0][1] = m[1][1] = m[2][1] = 0;
-        }
-        if(t.scale.z != 0.0f) {
-            m[0][2]/=t.scale.z;
-            m[1][2]/=t.scale.z;
-            m[2][2]/=t.scale.z;
-        } else {
-            m[0][2] = m[1][2] =m[2][2] = 0;
-        }
-
-        t.rotation = glm::quat_cast(m);
-
-        return t;
+    inline bool operator!=(const Transform &rhs) const {
+        return !(rhs == *this);
     }
 };
 
