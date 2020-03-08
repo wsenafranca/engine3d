@@ -19,3 +19,6 @@
 [submodule "lib/inih"]
 	path = lib/inih
 	url = https://github.com/jtilly/inih.git
+[submodule "lib/sol2"]
+	path = lib/sol2
+	url = https://github.com/ThePhD/sol2.git
