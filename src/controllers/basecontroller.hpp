@@ -10,15 +10,13 @@
 template <class T>
 class BaseController : public Object {
 public:
-    explicit BaseController(const std::shared_ptr<T> &target) : mTarget(target) {}
-
     virtual void Update(float dt) = 0;
 
     [[nodiscard]] const std::shared_ptr<T> &GetTarget() const {
         return mTarget;
     }
 
-    void SetTarget(const std::shared_ptr<T> &target) {
+    virtual void SetTarget(const std::shared_ptr<T> &target) {
         mTarget = target;
     }
 

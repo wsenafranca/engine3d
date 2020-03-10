@@ -12,7 +12,6 @@ Application* Application::sThisApplication = nullptr;
 Application::Application() : pWindow(nullptr) {}
 
 int Application::Exec(int argc, char** argv) {
-
     sThisApplication = this;
     Config config;
     try {
@@ -72,6 +71,8 @@ int Application::Exec(int argc, char** argv) {
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glShadeModel(GL_SMOOTH);
+
+    LuaManager::Init();
 
     Input::Connect();
     MessageManager::RegisterWindow(pWindow);

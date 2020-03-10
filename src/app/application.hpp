@@ -5,11 +5,12 @@
 #ifndef ENGINE3D_SRC_APPLICATION_HPP
 #define ENGINE3D_SRC_APPLICATION_HPP
 
-#include "../graphics/opengl.hpp"
-#include "../sys/messagehandler.hpp"
-#include "../sys/input.hpp"
+#include <graphics/opengl.hpp>
+#include <sys/messagehandler.hpp>
+#include <sys/input.hpp>
 #include "appinfo.hpp"
-#include "../sys/log.hpp"
+#include <sys/log.hpp>
+#include <lua/luamanager.hpp>
 
 class Application : public MessageHandler {
 public:

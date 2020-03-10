@@ -12,12 +12,14 @@
 
 class AnimController : public BaseController<ModelInstance> {
 public:
-    explicit AnimController(const std::shared_ptr<ModelInstance> &target);
+    explicit AnimController(const std::string &name);
 
     void Update(float dt) override;
 
     AnimState *GetAnimation(const std::string& name) const;
     AnimState *AddAnimation(const std::string& name, Animation* animation);
+
+    void SetTarget(const std::shared_ptr<ModelInstance> &target) override;
 
 protected:
     void Apply(Animation* animation, float time);

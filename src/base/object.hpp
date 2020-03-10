@@ -18,6 +18,10 @@ public:
     [[nodiscard]] const std::string &GetName() const;
     void SetName(const std::string &name);
 
+    const std::unordered_map<std::string, std::any> &GetProperties() const;
+
+    [[nodiscard]] bool HasProperty(const std::string& name) const;
+
     template<class T>
     void SetProperty(const std::string& name, const T& value) {
         mProperties[name] = value;

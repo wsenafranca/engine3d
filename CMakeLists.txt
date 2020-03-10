@@ -3,7 +3,7 @@ project(Engine3D)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Engine3D src/main.cpp src/app/application.cpp src/app/application.hpp src/base/object.cpp src/base/object.hpp src/graphics/shaderprogram.cpp src/graphics/shaderprogram.hpp src/graphics/texture.cpp src/graphics/texture.hpp src/graphics/buffer.cpp src/graphics/buffer.hpp src/graphics/material.hpp src/graphics/mesh.hpp src/graphics/node.hpp src/graphics/camera.hpp src/graphics/light.hpp src/base/resourcemanager.hpp src/graphics/vertexarray.cpp src/graphics/vertexarray.hpp src/sys/messagemanager.cpp src/sys/messagemanager.hpp src/sys/message.hpp src/sys/messagehandler.cpp src/sys/messagehandler.hpp src/sys/events.hpp src/base/pool.hpp src/graphics/material.cpp src/graphics/meshbatch.cpp src/graphics/meshbatch.hpp src/graphics/shader.hpp src/graphics/camera.cpp src/graphics/bone.hpp src/graphics/meshbuilder.cpp src/graphics/meshbuilder.hpp src/graphics/model.cpp src/graphics/model.hpp src/animations/animation.hpp src/animations/animation.cpp src/graphics/bitmap.cpp src/graphics/bitmap.hpp src/graphics/texturebuilder.cpp src/graphics/texturebuilder.hpp src/graphics/lightsystem.cpp src/graphics/lightsystem.hpp src/sys/input.cpp src/sys/input.hpp src/base/singleton.hpp src/sys/inputstates.hpp src/animations/animstate.hpp src/controllers/charactercontroller.cpp src/controllers/charactercontroller.hpp src/math/transform.hpp src/app/appinfo.hpp src/app/config.cpp src/app/config.hpp src/sys/log.cpp src/sys/log.hpp src/graphics/modelinstance.cpp src/graphics/modelinstance.hpp src/controllers/animcontroller.cpp src/controllers/animcontroller.hpp src/controllers/basecontroller.hpp)
+add_executable(Engine3D src/main.cpp src/app/application.cpp src/app/application.hpp src/base/object.cpp src/base/object.hpp src/graphics/shaderprogram.cpp src/graphics/shaderprogram.hpp src/graphics/texture.cpp src/graphics/texture.hpp src/graphics/buffer.cpp src/graphics/buffer.hpp src/graphics/material.hpp src/graphics/mesh.hpp src/graphics/node.hpp src/graphics/camera.hpp src/graphics/light.hpp src/base/resourcemanager.hpp src/graphics/vertexarray.cpp src/graphics/vertexarray.hpp src/sys/messagemanager.cpp src/sys/messagemanager.hpp src/sys/message.hpp src/sys/messagehandler.cpp src/sys/messagehandler.hpp src/sys/events.hpp src/base/pool.hpp src/graphics/material.cpp src/graphics/meshbatch.cpp src/graphics/meshbatch.hpp src/graphics/shader.hpp src/graphics/camera.cpp src/graphics/bone.hpp src/graphics/meshbuilder.cpp src/graphics/meshbuilder.hpp src/graphics/model.cpp src/graphics/model.hpp src/animations/animation.hpp src/animations/animation.cpp src/graphics/bitmap.cpp src/graphics/bitmap.hpp src/graphics/texturebuilder.cpp src/graphics/texturebuilder.hpp src/graphics/lightsystem.cpp src/graphics/lightsystem.hpp src/sys/input.cpp src/sys/input.hpp src/base/singleton.hpp src/sys/inputstates.hpp src/animations/animstate.hpp src/controllers/charactercontroller.cpp src/controllers/charactercontroller.hpp src/math/transform.hpp src/app/appinfo.hpp src/app/config.cpp src/app/config.hpp src/sys/log.cpp src/sys/log.hpp src/graphics/modelinstance.cpp src/graphics/modelinstance.hpp src/controllers/animcontroller.cpp src/controllers/animcontroller.hpp src/controllers/basecontroller.hpp src/lua/luamanager.cpp src/lua/luamanager.hpp)
 
 find_package(OpenGL)
 target_link_libraries(Engine3D ${OPENGL_gl_LIBRARY})
@@ -35,7 +35,12 @@ add_subdirectory(lib/assimp)
 target_link_libraries(Engine3D assimp)
 include_directories(lib/assimp/include)
 
+add_subdirectory(lib/lua)
+target_link_libraries(Engine3D slualib)
+include_directories(lib/lua)
+
 add_definitions(-DGLM_FORCE_RADIANS -DGLM_ENABLE_EXPERIMENTAL)
 include_directories(lib/glm)
 include_directories(lib/filesystem)
 include_directories(lib/stb)
+include_directories(lib/sol2/include)

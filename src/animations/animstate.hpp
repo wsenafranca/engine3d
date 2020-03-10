@@ -34,9 +34,8 @@ struct AnimState {
     std::list<AnimTransition> transitions;
     char playMode{1};
     bool isFinished{false};
-    std::function<void()> startCallback;
-    std::function<void()> endCallback;
-    std::unordered_map<uint32_t, std::function<void()> > frameCallback;
+    std::function<void(AnimController*, AnimState*, uint32_t)> endCallback;
+    std::unordered_map<uint32_t, std::function<void(AnimController*, AnimState*, uint32_t)> > frameCallback;
 };
 
 #endif //ENGINE3D_SRC_ANIMATIONS_ANIMSTATE_HPP
