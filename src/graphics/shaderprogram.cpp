@@ -8,6 +8,8 @@
 #include <fstream>
 #include "opengl.hpp"
 #include <glm/gtc/type_ptr.hpp>
+#include "material.hpp"
+#include "components/light.hpp"
 
 ShaderProgram::~ShaderProgram() {
     glDeleteProgram(glProgram);
@@ -176,13 +178,13 @@ void ShaderProgram::SetUniform(const std::string &name, const Material &material
 }
 
 void ShaderProgram::SetUniform(const std::string &name, const Light &light) {
-    glUniform1i(GetUniformLocation(name + ".type"), light.type);
-    glUniform3fv(GetUniformLocation(name + ".position"), 1, glm::value_ptr(light.position));
-    glUniform3fv(GetUniformLocation(name + ".direction"), 1, glm::value_ptr(light.direction));
-    glUniform3fv(GetUniformLocation(name + ".color"), 1, glm::value_ptr(light.color));
-    glUniform1f(GetUniformLocation(name + ".constantAttenuation"), light.constantAttenuation);
-    glUniform1f(GetUniformLocation(name + ".linearAttenuation"), light.linearAttenuation);
-    glUniform1f(GetUniformLocation(name + ".quadraticAttenuation"), light.quadraticAttenuation);
-    glUniform1f(GetUniformLocation(name + ".spotInnerCutoff"), std::cos(light.spotInnerAngle));
-    glUniform1f(GetUniformLocation(name + ".spotOuterCutoff"), std::cos(light.spotOuterAngle));
+    glUniform1i(GetUniformLocation(name + ".type"), light.GetType());
+    glUniform3fv(GetUniformLocation(name + ".position"), 1, glm::value_ptr(light.GetWorldPosition()));
+    glUniform3fv(GetUniformLocation(name + ".direction"), 1, glm::value_ptr(light.GetWorldDirection()));
+    glUniform3fv(GetUniformLocation(name + ".color"), 1, glm::value_ptr(light.GetColor()));
+    glUniform1f(GetUniformLocation(name + ".constantAttenuation"), light.GetConstantAttenuation());
+    glUniform1f(GetUniformLocation(name + ".linearAttenuation"), light.GetLinearAttenuation());
+    glUniform1f(GetUniformLocation(name + ".quadraticAttenuation"), light.GetQuadraticAttenuation());
+    glUniform1f(GetUniformLocation(name + ".spotInnerCutoff"), std::cos(light.GetSpotInnerAngle()));
+    glUniform1f(GetUniformLocation(name + ".spotOuterCutoff"), std::cos(light.GetSpotOuterAngle()));
 }

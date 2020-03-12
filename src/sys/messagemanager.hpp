@@ -13,10 +13,9 @@
 #include <list>
 #include "message.hpp"
 #include "../base/singleton.hpp"
+#include <graphics/opengl.hpp>
 
 class MessageHandler;
-class GLFWwindow;
-class GLFWmonitor;
 
 class TMessageManager {
 public:

@@ -5,7 +5,7 @@
 #include "messagehandler.hpp"
 
 MessageHandler::~MessageHandler() {
-    MessageManager::RemoveHandler(this);
+    //MessageManager::RemoveHandler(this);
 }
 
 void MessageHandler::OnMessageReceived(int event, void *data) {

@@ -19,7 +19,7 @@ public:
     void Exit();
 
     AppInfo *GetAppInfo() const;
-    GLFWwindow *GetPWindow() const;
+    GLFWwindow *GetWindow() const;
 
     static Application* sThisApplication;
 protected:

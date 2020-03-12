@@ -4,33 +4,42 @@
 
 #include "meshbatch.hpp"
 #include "opengl.hpp"
+#include <scenes/scene.hpp>
+#include "shader.hpp"
+#include "shaderprogram.hpp"
 
-void MeshBatch::Begin(Camera *camera, Shader *shader) {
-    pCamera = camera;
+void MeshBatch::Begin(Scene* scene, Shader *shader) {
+    pScene = scene;
     pShader = shader;
 }
 
-void MeshBatch::Render(Mesh *mesh, const glm::mat4 &worldMatrix, const std::vector<glm::mat4> *boneMatrices) {
-    mCommands.push({mesh, worldMatrix, boneMatrices});
+void MeshBatch::Render(Mesh *mesh, const glm::mat4 &worldMatrix, const std::vector<glm::mat4> &boneMatrices) {
+    RenderCommand cmd;
+    cmd.mesh = mesh;
+    cmd.worldMatrix = worldMatrix;
+    cmd.boneMatrices = boneMatrices;
+    mCommands.push(cmd);
+}
+
+void MeshBatch::Render(Mesh *mesh, const glm::mat4 &worldMatrix) {
+    RenderCommand cmd;
+    cmd.mesh = mesh;
+    cmd.worldMatrix = worldMatrix;
+    mCommands.push(cmd);
 }
 
 void MeshBatch::Flush() {
     pShader->GetProgram()->Use();
-    pShader->SetCamera(pCamera);
-    if(pLightSystem) {
-        std::list<Light*> lights;
-        for(const auto& it : pLightSystem->GetLights()) {
-            lights.push_back(it.second.get());
-        }
-        pShader->SetLights(lights);
+    auto camLock = pScene->GetActiveCamera().lock();
+    if(camLock) {
+        pShader->SetCamera(*camLock);
     }
+    pShader->SetLights(pScene->GetLights());
     while(!mCommands.empty()) {
         const auto& cmd = mCommands.front();
         pShader->SetWorldMatrix(cmd.worldMatrix);
         const auto& mesh = cmd.mesh;
-        if(cmd.boneMatrices) {
-            pShader->SetBoneMatrices(*cmd.boneMatrices);
-        }
+        pShader->SetBoneMatrices(cmd.boneMatrices);
         pShader->SetMaterial(*mesh->material);
         pShader->SetAttributeBits(mesh->attributeBits);
         mesh->vertexArray->Bind();
@@ -48,14 +57,6 @@ void MeshBatch::Flush() {
 
 void MeshBatch::End() {
     Flush();
-    pCamera = nullptr;
+    pScene = nullptr;
     pShader = nullptr;
-}
-
-void MeshBatch::SetLightSystem(LightSystem *lightSystem) {
-    pLightSystem = lightSystem;
-}
-
-LightSystem *MeshBatch::GetLightSystem() const {
-    return pLightSystem;
 }

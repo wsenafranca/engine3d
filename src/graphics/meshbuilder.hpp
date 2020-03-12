@@ -33,6 +33,10 @@ public:
     MeshBuilder& SetMaterial(const std::shared_ptr<Material>& material);
     [[nodiscard]] const std::shared_ptr<Material> &GetMaterial() const;
 
+    MeshBuilder& SetSkeleton(const std::shared_ptr<Skeleton> &skeleton);
+    [[nodiscard]]const std::shared_ptr<Skeleton> &GetSkeleton() const;
+
+
     MeshBuilder& SetFlipTextureCoord(bool flipX, bool flipY);
     [[nodiscard]] bool IsFlipTextureCoordX() const;
     [[nodiscard]] bool IsFlipTextureCoordY() const;
@@ -56,6 +60,7 @@ private:
     std::vector<float> mTangents;
     std::vector<uint32_t> mIndices;
     std::shared_ptr<Material> mMaterial;
+    std::shared_ptr<Skeleton> mSkeleton;
     uint32_t mAttributeBits{0};
     uint32_t mRenderMode{4};
     bool mFlipTextureCoordX{false};

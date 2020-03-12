@@ -6,7 +6,6 @@
 #define ENGINE3D_SRC_IMPORTER_HPP
 
 #include "../graphics/node.hpp"
-#include "../graphics/model.hpp"
 #include "../graphics/meshbuilder.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -15,41 +14,48 @@
 #include "../graphics/texturebuilder.hpp"
 #include "../graphics/opengl.hpp"
 #include "animations/animation.hpp"
+#include <scenes/scene.hpp>
 
 class Importer {
 public:
-    static void LoadModel(Model *model, const filesystem::path& file) {
+    std::shared_ptr<Node> LoadNode(const filesystem::path& file, Scene *scene) {
         if(!file.exists()) {
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory), file.str());
         }
 
         Assimp::Importer importer;
         const aiScene *pScene = importer.ReadFile(file.str(),
-                aiProcess_Triangulate |
-                aiProcess_CalcTangentSpace |
-                aiProcess_GenNormals |
-                aiProcess_GenUVCoords |
-                aiProcess_LimitBoneWeights |
-                aiProcess_PopulateArmatureData |
-                aiProcess_GlobalScale);
+                                                  aiProcess_Triangulate |
+                                                  aiProcess_CalcTangentSpace |
+                                                  aiProcess_GenNormals |
+                                                  aiProcess_GenUVCoords |
+                                                  aiProcess_LimitBoneWeights |
+                                                  aiProcess_PopulateArmatureData |
+                                                  aiProcess_GlobalScale);
         if(!pScene || pScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !pScene->mRootNode) {
             throw std::runtime_error("Failed to import " + file.str() + importer.GetErrorString());
         }
 
-        auto root = BuildNode(pScene->mRootNode);
-        root->name = file.filename().substr(0, file.filename().rfind('.'));
-        model->SetRootNode(root);
-
+        meshes.resize(pScene->mNumMeshes);
         for(size_t i = 0; i < pScene->mNumMeshes; i++) {
-            LoadMesh(model, pScene, pScene->mMeshes[i]);
+            LoadMesh(pScene, i);
         }
 
-        LoadNode(root, model, pScene->mRootNode, pScene);
+        std::string rootName = file.filename().substr(0, file.filename().rfind('.'));
+        auto root = scene->CreateNode(rootName);
+        root->AddNode(BuildNode(scene, pScene->mRootNode));
+
+        for(auto &it : skeletons) {
+            it.second->root = root;
+            BuildSkeleton(it.second.get(), nodes[it.first]);
+        }
 
         importer.FreeScene();
+
+        return root;
     }
 
-    static void LoadAnimation(Animation* animation, const filesystem::path& file) {
+    std::shared_ptr<Animation> LoadAnimation(const filesystem::path& file) {
         if(!file.exists()) {
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory), file.str());
         }
@@ -64,47 +70,47 @@ public:
             throw std::runtime_error("Failed to import " + file.str() + importer.GetErrorString());
         }
 
+        auto animation = std::make_shared<Animation>();
         if(pScene->mNumAnimations > 0) {
             auto pAnimation = pScene->mAnimations[0];
             LoadAnimation(animation, pAnimation);
         }
 
         importer.FreeScene();
+
+        return animation;
     }
 
 protected:
-    static std::shared_ptr<Node> BuildNode(const aiNode *pNode) {
-        auto node = std::make_shared<Node>();
-        node->name = pNode->mName.C_Str();
-        for(size_t i = 0; i < pNode->mNumChildren; i++) {
-            node->children.push_back(BuildNode(pNode->mChildren[i]));
-        }
-
-        return node;
-    }
-    static void LoadNode(const std::shared_ptr<Node> &node, Model *model, const aiNode *pNode, const aiScene *pScene) {
-        for(size_t i = 0; i < pNode->mNumMeshes; i++) {
-            node->meshes.push_back(model->GetMesh(pNode->mMeshes[i]));
-        }
-
+    std::shared_ptr<Node> BuildNode(Scene *scene, const aiNode *pNode) {
+        auto node = scene->CreateNode(pNode->mName.C_Str());
         aiMatrix4x4 transformation = pNode->mTransformation;
         aiVector3D t, s;
         aiQuaternion r;
         transformation.Decompose(s, r, t);
-        //model->SetNodeTransform(node->name, glm::make_mat4(&transformation.Transpose().a1));
-        model->SetNodeTransform(node->name, Transform(
+        node->SetLocalTransform(Transform(
                 glm::vec3(t.x, t.y, t.z),
                 glm::quat(r.w, r.x, r.y, r.z),
                 glm::vec3(s.x, s.y, s.z)));
 
-        uint32_t i = 0;
-        for(auto& child : node->children) {
-            LoadNode(child, model, pNode->mChildren[i], pScene);
-            i++;
+        for(size_t i = 0; i < pNode->mNumMeshes; i++) {
+            node->AddMesh(meshes[pNode->mMeshes[i]]);
         }
+
+        auto it = bones.find(node->GetName());
+        if(it != bones.end()) {
+            node->SetBone(it->second);
+        }
+
+        nodes[node->GetName()] = node;
+        for(size_t i = 0; i < pNode->mNumChildren; i++) {
+            node->AddNode(BuildNode(scene, pNode->mChildren[i]));
+        }
+
+        return node;
     }
 
-    static std::shared_ptr<Material> LoadMaterial(Model* model, const aiMaterial *pMaterial) {
+    static std::shared_ptr<Material> LoadMaterial(const aiMaterial *pMaterial) {
         MaterialBuilder builder;
 
         aiColor3D outColor;
@@ -242,7 +248,8 @@ protected:
         return builder.Build();
     }
 
-    static void LoadMesh(Model* model, const aiScene *pScene, const aiMesh *pMesh) {
+    void LoadMesh(const aiScene *pScene, uint32_t meshIndex) {
+        auto pMesh = pScene->mMeshes[meshIndex];
         MeshBuilder builder;
         if(pMesh->HasPositions()) {
             std::vector<float> positions(pMesh->mNumVertices*3);
@@ -265,13 +272,35 @@ protected:
         if(pMesh->HasBones()) {
             std::vector<int> joints(pMesh->mNumVertices*4, 0);
             std::vector<float> weights(pMesh->mNumVertices*4, 0.0f);
+            std::shared_ptr<Skeleton> skeleton;
             for(size_t i = 0; i < pMesh->mNumBones; i++) {
                 auto pBone = pMesh->mBones[i];
                 auto pBoneNode = pBone->mNode;
-                auto bone = model->CreateBone(pBone->mName.C_Str());
-                aiMatrix4x4 offsetMatrix = pBone->mOffsetMatrix;
-                bone->offsetMatrix = glm::make_mat4(&offsetMatrix.Transpose().a1);
-                model->FindNode(bone->name)->bone = bone;
+
+                std::string boneName = pBone->mName.C_Str();
+                std::shared_ptr<Bone> bone;
+                auto it = bones.find(boneName);
+                if(it != bones.end()) {
+                    bone = it->second;
+                } else {
+                    aiMatrix4x4 offsetMatrix = pBone->mOffsetMatrix;
+                    bone = std::make_shared<Bone>();
+                    bone->name = boneName;
+                    bone->index = boneMap.size();
+                    bone->offsetMatrix = glm::make_mat4(&offsetMatrix.Transpose().a1);
+
+                    std::string skeletonName = pBone->mArmature->mName.C_Str();
+                    auto skeletonIt = skeletons.find(skeletonName);
+                    if(skeletonIt != skeletons.end()) {
+                        skeleton = skeletonIt->second;
+                    } else {
+                        skeleton = std::make_shared<Skeleton>();
+                        skeleton->name = skeletonName;
+                        skeletons[skeletonName] = skeleton;
+                    }
+                    boneMap[boneName] = bone->index;
+                    bones[boneName] = bone;
+                }
 
                 for(size_t j = 0; j < pBone->mNumWeights; j++) {
                     for(size_t k = 0; k < 4; k++) {
@@ -285,7 +314,9 @@ protected:
             }
             builder.SetJoints(joints);
             builder.SetWeights(weights);
+            builder.SetSkeleton(skeleton);
         }
+
         if(pMesh->HasTangentsAndBitangents()) {
             std::vector<float> tangents(pMesh->mNumVertices*3);
             memcpy(tangents.data(), pMesh->mTangents, sizeof(float)*tangents.size());
@@ -301,14 +332,21 @@ protected:
             builder.SetIndices(indices);
         }
 
-        builder.SetMaterial(LoadMaterial(model, pScene->mMaterials[pMesh->mMaterialIndex]));
+        builder.SetMaterial(LoadMaterial(pScene->mMaterials[pMesh->mMaterialIndex]));
 
         auto mesh = builder.Build();
         mesh->name = pMesh->mName.C_Str();
-        model->AddMesh(mesh);
+        meshes[meshIndex] = mesh;
     }
 
-    static void LoadAnimation(Animation* animation, const aiAnimation* pAnimation) {
+    static void BuildSkeleton(Skeleton* skeleton, const std::shared_ptr<Node> &node) {
+        skeleton->joints.push_back(node);
+        for(auto &child : node->GetChildren()) {
+            BuildSkeleton(skeleton, child);
+        }
+    }
+
+    static void LoadAnimation(std::shared_ptr<Animation> &animation, const aiAnimation* pAnimation) {
         animation->SetName(pAnimation->mName.C_Str());
         animation->SetDuration((float)pAnimation->mDuration);
         if(pAnimation->mTicksPerSecond > 0) {
@@ -337,6 +375,12 @@ protected:
             animation->AddChannel(pChannel->mNodeName.C_Str(), channel);
         }
     }
+
+    std::unordered_map< std::string, std::shared_ptr<Node> > nodes;
+    std::unordered_map< std::string, std::shared_ptr<Bone> > bones;
+    std::unordered_map< std::string, uint32_t > boneMap;
+    std::unordered_map< std::string, std::shared_ptr<Skeleton> > skeletons;
+    std::vector< std::shared_ptr<Mesh> > meshes;
 };
 
 

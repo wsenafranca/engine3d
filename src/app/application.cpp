@@ -130,6 +130,6 @@ AppInfo *Application::GetAppInfo() const {
     return mAppInfo.get();
 }
 
-GLFWwindow *Application::GetPWindow() const {
+GLFWwindow *Application::GetWindow() const {
     return pWindow;
 }

@@ -1,12 +1,15 @@
-#include "app/application.hpp"
-#include "graphics/shaderprogram.hpp"
-#include "graphics/meshbatch.hpp"
-#include "graphics/model.hpp"
-#include "graphics/meshbuilder.hpp"
-#include "graphics/texturebuilder.hpp"
-#include <controllers/charactercontroller.hpp>
-#include <controllers/animcontroller.hpp>
-#include <graphics/modelinstance.hpp>
+#include <app/application.hpp>
+#include <graphics/shaderprogram.hpp>
+#include <graphics/shader.hpp>
+#include <graphics/meshbatch.hpp>
+#include <graphics/meshbuilder.hpp>
+#include <graphics/texturebuilder.hpp>
+#include <components/camera.hpp>
+#include <components/light.hpp>
+#include <components/animator.hpp>
+#include <scenes/scene.hpp>
+#include <controllers/playercontroller.hpp>
+#include <controllers/maincameracontroller.hpp>
 
 class MyShader : public Shader {
 public:
@@ -22,19 +25,22 @@ public:
         return mProgram;
     }
 
-    void SetCamera(const Camera *camera) override {
-        mProgram->SetUniform("uView", camera->GetViewMatrix());
-        mProgram->SetUniform("uProjection", camera->GetProjectionMatrix());
-        mProgram->SetUniform("uCameraPosition", camera->worldPosition);
+    void SetCamera(const Camera &camera) override {
+        mProgram->SetUniform("uView", camera.GetViewMatrix());
+        mProgram->SetUniform("uProjection", camera.GetProjectionMatrix());
+        mProgram->SetUniform("uCameraPosition", camera.GetWorldPosition());
     }
 
-    void SetLights(const std::list<Light *> &lights) override {
-        int i = 0;
-        for(const auto& light : lights) {
-            mProgram->SetUniform("uLights[" + std::to_string(i) + "]", *light);
-            i++;
+    void SetLights(const std::vector< std::weak_ptr<Light> >&lights) override {
+        int numLights = 0;
+        for(const auto & light : lights) {
+            auto lock = light.lock();
+            if(lock) {
+                mProgram->SetUniform("uLights[" + std::to_string(numLights) + "]", *(lock));
+                numLights++;
+            }
         }
-        mProgram->SetUniform("uNumLights", i);
+        mProgram->SetUniform("uNumLights", numLights);
     }
 
     void SetWorldMatrix(const glm::mat4 &worldMatrix) override {
@@ -72,12 +78,12 @@ public:
         return mProgram;
     }
 
-    void SetCamera(const Camera *camera) override {
-        mProgram->SetUniform("uView", glm::mat4(glm::mat3(camera->GetViewMatrix())));
-        mProgram->SetUniform("uProjection", camera->GetProjectionMatrix());
+    void SetCamera(const Camera &camera) override {
+        mProgram->SetUniform("uView", glm::mat3(camera.GetViewMatrix()));
+        mProgram->SetUniform("uProjection", camera.GetProjectionMatrix());
     }
 
-    void SetLights(const std::list<Light *> &lights) override {}
+    void SetLights(const std::vector< std::weak_ptr<Light> >&lights) override {}
 
     void SetWorldMatrix(const glm::mat4 &worldMatrix) override {}
 
@@ -101,29 +107,32 @@ protected:
         mShader = new MyShader();
         mSkyBoxShader = new SkyBoxShader();
 
-        mModel = new Model("data/models/xbot.fbx");
-        mPlayer = mModel->CreateInstance();
-        mAnimController = std::make_shared<AnimController>("playerAnimController");
-        mAnimController->SetTarget(mPlayer);
+        mScene = new Scene();
+        mPlayer = Node::Load("data/models/xbot.fbx", mScene);
+        mPlayer->AddComponent(Animator::Load("player"));
+        mPlayer->SetController(std::make_shared<PlayerController>());
+        mScene->GetRoot()->AddNode(mPlayer);
 
-        mCamera = new Camera(glm::radians(45.0f), 4.0f/3.0f, 0.1f, 100.0f);
-        mCamera->restPosition = glm::vec3(0.0f, 5.0f, -8.0f);
-        mCamera->position = mCamera->restPosition;
-        mCamera->LookAt(glm::vec3(0.0f, 1.0f, 0.0f));
+        auto camera = std::make_shared<Camera>(glm::radians(45.0f), 4.0f/3.0f, 0.1f, 100.0f);
+        mCamera = mScene->CreateCamera("MainCamera", camera);
+        mCamera->SetPosition(glm::vec3(0.0f, 5.0f, 8.0f));
+        mCamera->SetRotation(glm::angleAxis(glm::radians(-30.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        auto camController = std::make_shared<MainCameraController>();
+        camController->SetCameraTarget(mPlayer);
+        mCamera->SetController(camController);
+        mScene->GetRoot()->AddNode(mCamera);
 
-        mPlayer->GetModel()->GetRootNode()->camera.reset(mCamera);
-
-        mLightSystem.CreateDirectionalLight("DirLight", glm::vec3(0.2f), glm::vec3(-0.2f, -1.0f, -0.3f));
-        mLightSystem.CreatePointLight("PointLight", glm::vec3(0.7f, 0.1f, 0.0f), glm::vec3(4.0f, 4.0f, -4.0f));
-        mLightSystem.CreatePointLight("PointLight1", glm::vec3(0.2f, 0.8f, 0.0f), glm::vec3(-4.0f, 4.0f, -4.0f));
-        mLightSystem.CreatePointLight("PointLight2", glm::vec3(0.3f, 0.0f, 9.0f), glm::vec3(0.0f, 4.0f, 4.0f));
-        mSpotLight = mLightSystem.CreateSpotLight("SpotLight",
+        mScene->GetRoot()->AddNode(mScene->CreateDirectionalLight("DirLight", glm::vec3(0.2f), glm::quatLookAt(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.0f, 1.0f, 0.0f))));
+        mScene->GetRoot()->AddNode(mScene->CreatePointLight("PointLight", glm::vec3(0.7f, 0.1f, 0.0f), glm::vec3(4.0f, 4.0f, -4.0f)));
+        mScene->GetRoot()->AddNode(mScene->CreatePointLight("PointLight1", glm::vec3(0.2f, 0.8f, 0.0f), glm::vec3(-4.0f, 4.0f, -4.0f)));
+        mScene->GetRoot()->AddNode(mScene->CreatePointLight("PointLight2", glm::vec3(0.3f, 0.0f, 9.0f), glm::vec3(0.0f, 4.0f, 4.0f)));
+        mSpotLight = mScene->CreateSpotLight("SpotLight",
                 glm::vec3(1.0f, 0.0f, 1.0f),
-                glm::vec3(0.0f, -2.5f, -10.0f),
+                glm::quatLookAt(glm::vec3(0.0f, -2.5f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
                 glm::vec3(0.0f, 5.0f, 0.0f),
                 glm::radians(30.0f),
                 glm::radians(60.0f));
-        mBatch.SetLightSystem(&mLightSystem);
+        mScene->GetRoot()->AddNode(mSpotLight);
 
         mFloor = MeshBuilder()
                 .SetPlane(
@@ -181,81 +190,81 @@ protected:
         stateTime += dt;
 
         if(Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            auto rot = glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_X), glm::vec3(0.0f, 1.0f, 0.0f))*
-                         glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_Y), glm::vec3(1.0f, 0.0f, 0.0f));
-            mCamera->position = rot*mCamera->position;
+            //auto rot = glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_X), glm::vec3(0.0f, 1.0f, 0.0f))*
+            //             glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_Y), glm::vec3(1.0f, 0.0f, 0.0f));
+            //mCamera->position = rot*mCamera->position;
         } else {
-            if(mPlayerController.IsMoving()) {
-                mCamera->position = mCamera->restPosition;
-            }
-            if(Input::GetMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-                mPlayerController.Yaw(Input::GetAxis(INPUT_AXIS_MOUSE_X));
-                mCamera->position = glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_Y)*0.2f, glm::vec3(1.0f, 0.0f, 0.0f))*mCamera->position;
+            //if(mPlayerController.IsMoving()) {
+                //mCamera->position = mCamera->restPosition;
+            //}
+            //if(Input::GetMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+                //mPlayerController.Yaw(Input::GetAxis(INPUT_AXIS_MOUSE_X));
+                //mCamera->position = glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_Y)*0.2f, glm::vec3(1.0f, 0.0f, 0.0f))*mCamera->position;
                 //mCamera->yaw = mPlayerController.mYaw;
                 //mCamera->position = glm::angleAxis(Input::GetAxis(INPUT_AXIS_MOUSE_Y), glm::vec3(1.0f, 0.0f, 0.0f))*mCamera->position;
-                mCamera->restPosition = mCamera->position;
-            }
+                //mCamera->restPosition = mCamera->position;
+            //}
         }
         //mCamera->LookAt(mPlayerController.GetPosition());
         //mCamera->transform.rotation = glm::quatLookAt(-glm::normalize(mCamera->transform.position), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        if(mPlayerController.IsGrounded() && !startJumping) {
-            auto yaw = mPlayerController.mYaw;
-            auto rot = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
-            auto moveForward = rot*glm::vec3(0.0f, 0.0f, -1.0f);
-            auto moveRight = rot*glm::vec3(-1.0f, 0.0f, 0.0f);
+        //if(mPlayerController.IsGrounded() && !startJumping) {
+        //    auto yaw = mPlayerController.mYaw;
+        //    auto rot = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+        //    auto moveForward = rot*glm::vec3(0.0f, 0.0f, -1.0f);
+        //    auto moveRight = rot*glm::vec3(-1.0f, 0.0f, 0.0f);
 
-            auto move = moveForward*Input::GetAxis(INPUT_AXIS_Y) + moveRight*Input::GetAxis(INPUT_AXIS_X);
-            if(glm::length(move) > 1) {
-                move = glm::normalize(move);
-            }
-            move*=6.0f;
-            if(move.z < 0) {
-                move.z *= 0.5f;
-            }
-            mPlayerController.Move(move);
+        //    auto move = moveForward*Input::GetAxis(INPUT_AXIS_Y) + moveRight*Input::GetAxis(INPUT_AXIS_X);
+        //    if(glm::length(move) > 1) {
+        //        move = glm::normalize(move);
+        //    }
+        //    move*=6.0f;
+        //    if(move.z < 0) {
+        //        move.z *= 0.5f;
+        //    }
+        //    mPlayerController.Move(move);
 
-            if(Input::GetKeyDown(KEY_SPACE) && !startJumping) {
-                startJumping = true;
-            }
-        }
-        if(mPlayerController.IsJumping()) {
-            startJumping = false;
-        }
+        //    if(Input::GetKeyDown(KEY_SPACE) && !startJumping) {
+        //        startJumping = true;
+        //    }
+        //}
+        //if(mPlayerController.IsJumping()) {
+        //    startJumping = false;
+        //}
 
-        float fov = mCamera->GetFieldOfView();
-        fov = glm::clamp(fov - Input::GetAxis(INPUT_AXIS_SCROLL_WHEEL),
-                         glm::radians(5.0f),
-                         glm::radians(80.0f));
-        mCamera->SetFieldOfView(fov);
+        //float fov = mCamera->GetFieldOfView();
+        //fov = glm::clamp(fov - Input::GetAxis(INPUT_AXIS_SCROLL_WHEEL),
+        //                 glm::radians(5.0f),
+        //                 glm::radians(80.0f));
+        //mCamera->SetFieldOfView(fov);
 
-        mPlayerController.Update(dt);
-
-        mPlayer->SetPosition(mPlayerController.GetPosition());
-        mPlayer->SetRotation(mPlayerController.GetRotation());
+        //mPlayerController.Update(dt);
 
 
-        mSpotLight->direction = mPlayerController.GetPosition() - mSpotLight->position;
+        //mPlayer->SetPosition(mPlayerController.GetPosition());
+        //mPlayer->SetRotation(mPlayerController.GetRotation());
 
-        mAnimController->SetProperty("grounded", mPlayerController.IsGrounded());
-        mAnimController->SetProperty("isMoving", mPlayerController.IsMoving());
-        mAnimController->SetProperty("jumping", startJumping);
-        mAnimController->SetProperty("falling", mPlayerController.IsFalling());
-        mAnimController->SetProperty("moveForward", Input::GetAxis(INPUT_AXIS_Y) < 0);
-        mAnimController->SetProperty("moveBackward", Input::GetAxis(INPUT_AXIS_Y) > 0);
-        mAnimController->SetProperty("moveRightStrafe", Input::GetAxis(INPUT_AXIS_X) > 0);
-        mAnimController->SetProperty("moveLeftStrafe", Input::GetAxis(INPUT_AXIS_X) < 0);
 
-        mAnimController->Update(dt);
+        //mSpotLight->direction = mPlayerController.GetPosition() - mSpotLight->position;
 
-        mBatch.Begin(mCamera, mShader);
+        //mAnimController->SetProperty("grounded", mPlayerController.IsGrounded());
+        //mAnimController->SetProperty("isMoving", mPlayerController.IsMoving());
+        //mAnimController->SetProperty("jumping", startJumping);
+        //mAnimController->SetProperty("falling", mPlayerController.IsFalling());
+        //mAnimController->SetProperty("moveForward", Input::GetAxis(INPUT_AXIS_Y) < 0);
+        //mAnimController->SetProperty("moveBackward", Input::GetAxis(INPUT_AXIS_Y) > 0);
+        //mAnimController->SetProperty("moveRightStrafe", Input::GetAxis(INPUT_AXIS_X) > 0);
+        //mAnimController->SetProperty("moveLeftStrafe", Input::GetAxis(INPUT_AXIS_X) < 0);
+
+        mScene->Update(dt);
+        mBatch.Begin(mScene, mShader);
         mBatch.Render(mFloor.get(), glm::mat4(1.0f));
-        mPlayer->Render(&mBatch);
+        mScene->Render(&mBatch);
         mBatch.End();
 
         glCullFace(GL_FRONT);
         glDepthFunc(GL_LEQUAL);
-        mBatch.Begin(mCamera, mSkyBoxShader);
+        mBatch.Begin(mScene, mSkyBoxShader);
         mBatch.Render(mSkyBox.get(), glm::mat4(1.0f));
         mBatch.End();
         glDepthFunc(GL_LESS);
@@ -265,20 +274,16 @@ protected:
     void OnDestroy() override {
         delete mShader;
         delete mSkyBoxShader;
-        delete mCamera;
-        //delete mModel;
+        delete mScene;
     }
 
     MeshBatch mBatch;
     MyShader *mShader{nullptr};
     SkyBoxShader *mSkyBoxShader{nullptr};
-    Camera *mCamera{nullptr};
-    LightSystem mLightSystem;
-    Light* mSpotLight{nullptr};
-    Model *mModel{nullptr};
-    std::shared_ptr<ModelInstance> mPlayer;
-    CharacterController mPlayerController;
-    std::shared_ptr<AnimController> mAnimController;
+    std::shared_ptr<Node> mCamera;
+    std::shared_ptr<Node> mSpotLight{nullptr};
+    Scene* mScene{nullptr};
+    std::shared_ptr<Node> mPlayer;
     std::shared_ptr<Mesh> mFloor;
     std::shared_ptr<Mesh> mSkyBox;
 };

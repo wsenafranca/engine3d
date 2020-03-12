@@ -2,13 +2,14 @@
 // Created by Washington on 07/03/2020.
 //
 
-#include "animcontroller.hpp"
+#include "animator.hpp"
 #include <lua/luamanager.hpp>
+#include <algorithm>
 
-AnimController::AnimController(const std::string &name) {
-    auto controllers = LuaManager::GetLuaState()->get<sol::table>("AnimControllers");
+std::shared_ptr<Animator> Animator::Load(const std::string &tableName) {
+    auto animController = std::make_shared<Animator>();
     try {
-        auto controller = controllers.get<sol::table>(name);
+        auto controller = (*LuaManager::GetLuaState())["Animators"][tableName].get<sol::table>();
 
         for(auto p : controller) {
             const sol::object& key = p.first;
@@ -17,9 +18,9 @@ AnimController::AnimController(const std::string &name) {
             if(stateName == "initialState") continue;
 
             const auto& stateTable = value.as<sol::table>();
-            std::string file = stateTable["file"];
-            auto animation = new Animation(file);
-            auto state = AddAnimation(stateName, animation);
+            std::string animFile = stateTable["file"];
+            auto animation = Animation::Load(animFile);
+            auto state = animController->AddAnimation(stateName, animation);
             state->playMode = stateTable.get_or("playMode", 0);
             auto transitionsTable = stateTable.get<sol::table>("transitions");
             for(auto p2 : transitionsTable) {
@@ -54,13 +55,15 @@ AnimController::AnimController(const std::string &name) {
             }
         }
 
-        mCurrentState = mStateMap[controller.get<std::string>("initialState")].get();
+        animController->mCurrentState = animController->mStateMap[controller.get<std::string>("initialState")].get();
     }catch (...) {
-        throw std::runtime_error("Error loading AnimController " + name);
+        throw std::runtime_error("Error loading Animator " + tableName);
     }
+
+    return animController;
 }
 
-void AnimController::Update(float dt) {
+void Animator::Update(float dt) {
     mTimeState += dt;
     mCurrentState->isFinished = false;
     if(mCurrentState->animation->IsFinishedAt(mTimeState)) {
@@ -78,7 +81,6 @@ void AnimController::Update(float dt) {
         }
         if(t.f && t.f(this, mCurrentState, frame)) {
             if(mCurrentState->endCallback) mCurrentState->endCallback(this, mCurrentState, frame);
-            mPrevState = mCurrentState;
             mCurrentState = mStateMap[t.target].get();
             mTimeState = 0.0f;
             mInBetween = true;
@@ -87,7 +89,7 @@ void AnimController::Update(float dt) {
     }
 
     if(mInBetween) {
-        float a = std::min(1.0f, mTimeState/0.5f);
+        float a = (std::min)(1.0f, mTimeState/0.5f);
         mInBetween = a < 1.0f;
         Blending(mCurrentState->animation.get(), mTimeState, a);
     } else {
@@ -95,22 +97,22 @@ void AnimController::Update(float dt) {
     }
 
     for(auto& it : mTransformMap) {
-        mTarget->SetNodeTransform(it.first, it.second.ToMatrix());
+        mNodeMap[it.first]->SetLocalTransform(it.second);
     }
 }
 
-void AnimController::Apply(Animation* animation, float time) {
+void Animator::Apply(Animation* animation, float time) {
     for(const auto& p : animation->GetChannels()) {
         auto it = mTransformMap.find(p.first);
         if(it == mTransformMap.end()) {
-            mTransformMap[p.first] = mTarget->GetNodeTransform(p.first);
+            mTransformMap[p.first] = mNodeMap[p.first]->GetLocalTransform();
         } else {
             it->second.Set(mCurrentState->animation->GetTransformAt(p.first, time));
         }
     }
 }
 
-void AnimController::Blending(Animation* animation, float time, float a) {
+void Animator::Blending(Animation* animation, float time, float a) {
     for(const auto& p : animation->GetChannels()) {
         auto transform = animation->GetTransformAt(p.first, time);
         auto it = mTransformMap.find(p.first);
@@ -124,7 +126,7 @@ void AnimController::Blending(Animation* animation, float time, float a) {
             if(a > 0.999f) {
                 mTransformMap[p.first] = transform;
             } else {
-                Transform restTransform = mTarget->GetNodeTransform(p.first);
+                Transform restTransform = mNodeMap[p.first]->GetLocalTransform();
                 restTransform.Lerp(transform, a);
                 mTransformMap[p.first] = restTransform;
             }
@@ -132,20 +134,33 @@ void AnimController::Blending(Animation* animation, float time, float a) {
     }
 }
 
-AnimState *AnimController::GetAnimation(const std::string &name) const {
-    return mStateMap.at(name).get();
+const std::shared_ptr<AnimState> &Animator::GetAnimation(const std::string &name) const {
+    return mStateMap.at(name);
 }
 
-AnimState *AnimController::AddAnimation(const std::string &name, Animation *animation) {
-    auto& state = mStateMap[name] = std::make_unique<AnimState>();
-    state->animation.reset(animation);
+std::shared_ptr<AnimState> Animator::AddAnimation(const std::string &name, const std::shared_ptr<Animation> &animation) {
+    auto state = std::make_shared<AnimState>();
+    mStateMap[name] = state;
+    state->animation = animation;
     if(mCurrentState == nullptr) {
         mCurrentState = state.get();
     }
-    return state.get();
+    return state;
 }
 
-void AnimController::SetTarget(const std::shared_ptr<ModelInstance> &target) {
-    BaseController::SetTarget(target);
-    mTransformMap = target->GetNodeTransformMap();
+void Animator::SetTarget(const std::weak_ptr<Node> &target) {
+    Component::SetTarget(target);
+    mTransformMap.clear();
+    target.lock()->GetChildren().front()->Apply([this](Node *node) {
+        mTransformMap[node->GetName()] = node->GetLocalTransform();
+        mNodeMap[node->GetName()] = node;
+    });
+}
+
+const std::unordered_map<std::string, std::any> &Animator::GetProperties() const {
+    return mProperties;
+}
+
+bool Animator::HasProperty(const std::string &name) const {
+    return mProperties.find(name) != mProperties.end();
 }

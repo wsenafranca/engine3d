@@ -3,14 +3,14 @@
 //
 
 #include "animation.hpp"
-#include "internal/importer.hpp"
+#include "../internal/importer.hpp"
+
+std::shared_ptr<Animation> Animation::Load(const filesystem::path &file) {
+    return Importer().LoadAnimation(file);
+}
 
 Animation::Animation() : mDuration(0), mTicksPerSecond(30) {
 
-}
-
-Animation::Animation(const filesystem::path &file) : mDuration(0), mTicksPerSecond(30) {
-    Importer::LoadAnimation(this, file);
 }
 
 bool Animation::IsFinishedAt(float time) const {
@@ -38,6 +38,9 @@ glm::vec3 Animation::GetTranslationAt(const AnimationChannel& channel, float tim
     }
 
     uint32_t nextIndex = lastIndex + 1;
+    if(nextIndex >= channel.translationKeys.size()) {
+        return channel.translationKeys.back().value;
+    }
     float dt = channel.translationKeys[nextIndex].time - channel.translationKeys[lastIndex].time;
     float a = (time - channel.translationKeys[lastIndex].time)/dt;
     a = glm::clamp(a, 0.0f, 1.0f);
@@ -58,6 +61,9 @@ glm::quat Animation::GetRotationAt(const AnimationChannel& channel, float time) 
     }
 
     uint32_t nextIndex = lastIndex + 1;
+    if(nextIndex >= channel.rotationKeys.size()) {
+        return channel.rotationKeys.back().value;
+    }
     float dt = channel.rotationKeys[nextIndex].time - channel.rotationKeys[lastIndex].time;
     float a = (time - channel.rotationKeys[lastIndex].time)/dt;
     a = glm::clamp(a, 0.0f, 1.0f);
@@ -78,6 +84,9 @@ glm::vec3 Animation::GetScaleAt(const AnimationChannel& channel, float time) con
     }
 
     uint32_t nextIndex = lastIndex + 1;
+    if(nextIndex >= channel.scaleKeys.size()) {
+        return channel.scaleKeys.back().value;
+    }
     float dt = channel.scaleKeys[nextIndex].time - channel.scaleKeys[lastIndex].time;
     float a = (time - channel.scaleKeys[lastIndex].time)/dt;
     a = glm::clamp(a, 0.0f, 1.0f);

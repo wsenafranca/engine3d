@@ -9,6 +9,7 @@
 #include "messagehandler.hpp"
 #include "../base/singleton.hpp"
 #include "inputstates.hpp"
+#include <array>
 
 class TInput : public MessageHandler {
 public:

@@ -2,15 +2,16 @@
 // Created by Washington on 21/02/2020.
 //
 
-#ifndef ENGINE3D_SRC_SHADERPROGRAM_HPP
-#define ENGINE3D_SRC_SHADERPROGRAM_HPP
+#ifndef ENGINE3D_SRC_GRAPHICS_SHADERPROGRAM_HPP
+#define ENGINE3D_SRC_GRAPHICS_SHADERPROGRAM_HPP
 
 #include <filesystem/path.h>
 #include <list>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "material.hpp"
-#include "light.hpp"
+
+class Material;
+class Light;
 
 class ShaderProgram {
 public:
@@ -71,4 +72,4 @@ private:
     mutable std::unordered_map<std::string, int32_t> mAttribCache;
 };
 
-#endif //ENGINE3D_SRC_SHADERPROGRAM_HPP
+#endif //ENGINE3D_SRC_GRAPHICS_SHADERPROGRAM_HPP

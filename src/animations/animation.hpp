@@ -24,8 +24,9 @@ struct AnimationChannel {
 
 class Animation : public Object {
 public:
+    static std::shared_ptr<Animation> Load(const filesystem::path& file);
+
     Animation();
-    explicit Animation(const filesystem::path& file);
 
     [[nodiscard]] bool IsFinishedAt(float time) const;
     [[nodiscard]] uint32_t GetFrameAt(float time) const;

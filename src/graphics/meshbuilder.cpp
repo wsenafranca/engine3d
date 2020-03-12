@@ -84,6 +84,15 @@ const std::shared_ptr<Material> &MeshBuilder::GetMaterial() const {
     return mMaterial;
 }
 
+MeshBuilder &MeshBuilder::SetSkeleton(const std::shared_ptr<Skeleton> &skeleton) {
+    mSkeleton = skeleton;
+    return *this;
+}
+
+const std::shared_ptr<Skeleton> &MeshBuilder::GetSkeleton() const {
+    return mSkeleton;
+}
+
 MeshBuilder &MeshBuilder::SetFlipTextureCoord(bool flipX, bool flipY) {
     mFlipTextureCoordX = flipX;
     mFlipTextureCoordY = flipY;
@@ -189,6 +198,7 @@ std::shared_ptr<Mesh> MeshBuilder::Build() {
     mesh->indexCount = mIndices.size();
     mesh->material = mMaterial;
     mesh->attributeBits = mAttributeBits;
+    mesh->skeleton = mSkeleton;
 
     return mesh;
 }

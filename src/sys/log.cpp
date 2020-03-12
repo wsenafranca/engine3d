@@ -7,6 +7,7 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <ctime>
 #include <iostream>
+#include <cctype>
 
 TLog::TLog() {
     stdOut = &std::cout;

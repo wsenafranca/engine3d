@@ -10,9 +10,9 @@
 #include <functional>
 #include <any>
 
-#define ANIM_STATE_TRANSITION_FUNC AnimController* graph, AnimState* state, uint32_t frame
+#define ANIM_STATE_TRANSITION_FUNC Animator* graph, AnimState* state, uint32_t frame
 
-class AnimController;
+class Animator;
 struct AnimState;
 
 enum AnimPlayMode {
@@ -22,7 +22,7 @@ enum AnimPlayMode {
     ANIM_PLAY_MODE_LOOP_REVERSED = 3
 };
 
-typedef std::function<bool(AnimController*, AnimState*, uint32_t)> AnimTransitionFunction;
+typedef std::function<bool(Animator*, AnimState*, uint32_t)> AnimTransitionFunction;
 
 struct AnimTransition {
     std::string target;
@@ -30,12 +30,12 @@ struct AnimTransition {
 };
 
 struct AnimState {
-    std::unique_ptr<Animation> animation;
+    std::shared_ptr<Animation> animation;
     std::list<AnimTransition> transitions;
     char playMode{1};
     bool isFinished{false};
-    std::function<void(AnimController*, AnimState*, uint32_t)> endCallback;
-    std::unordered_map<uint32_t, std::function<void(AnimController*, AnimState*, uint32_t)> > frameCallback;
+    std::function<void(Animator*, AnimState*, uint32_t)> endCallback;
+    std::unordered_map<uint32_t, std::function<void(Animator*, AnimState*, uint32_t)> > frameCallback;
 };
 
 #endif //ENGINE3D_SRC_ANIMATIONS_ANIMSTATE_HPP

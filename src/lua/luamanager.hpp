@@ -14,16 +14,19 @@
 class TLuaManager {
 public:
     void Init();
-    void LoadScript(const filesystem::path& file);
-
+    sol::unsafe_function_result LoadFile(const filesystem::path& file);
     sol::state *GetLuaState();
+
+protected:
+    static std::string GetName(const filesystem::path& file);
+
 private:
     std::unique_ptr<sol::state> mLuaState;
 };
 
 namespace LuaManager {
     inline void Init() {Singleton<TLuaManager>::GetInstance()->Init();}
-    inline void LoadScript(const filesystem::path& file) {Singleton<TLuaManager>::GetInstance()->LoadScript(file);}
+    inline sol::unsafe_function_result LoadFile(const filesystem::path& file) {return Singleton<TLuaManager>::GetInstance()->LoadFile(file);}
     inline sol::state *GetLuaState() {return Singleton<TLuaManager>::GetInstance()->GetLuaState();}
 }
 

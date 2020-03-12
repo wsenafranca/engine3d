@@ -2,20 +2,23 @@
 // Created by Washington on 24/02/2020.
 //
 
-#ifndef ENGINE3D_SRC_SHADER_HPP
-#define ENGINE3D_SRC_SHADER_HPP
+#ifndef ENGINE3D_SRC_GRAPHICS_SHADER_HPP
+#define ENGINE3D_SRC_GRAPHICS_SHADER_HPP
 
-#include "camera.hpp"
-#include "light.hpp"
-#include "shaderprogram.hpp"
-#include <list>
+#include <math/transform.hpp>
+#include <vector>
+
+class Camera;
+class Light;
+class Material;
+class ShaderProgram;
 
 class Shader {
 public:
     virtual ~Shader() = default;
     [[nodiscard]] virtual ShaderProgram* GetProgram() const = 0;
-    virtual void SetCamera(const Camera* camera) = 0;
-    virtual void SetLights(const std::list<Light*>& lights) = 0;
+    virtual void SetCamera(const Camera &camera) = 0;
+    virtual void SetLights(const std::vector< std::weak_ptr<Light> >& lights) = 0;
     virtual void SetWorldMatrix(const glm::mat4& worldMatrix) = 0;
     virtual void SetMaterial(const Material& material) = 0;
     virtual void SetAttributeBits(uint32_t attributeBits) = 0;
@@ -23,4 +26,4 @@ public:
 };
 
 
-#endif //ENGINE3D_SRC_SHADER_HPP
+#endif //ENGINE3D_SRC_GRAPHICS_SHADER_HPP

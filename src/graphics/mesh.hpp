@@ -12,6 +12,7 @@
 #include "material.hpp"
 #include <vector>
 #include <memory>
+#include "skeleton.hpp"
 
 class MeshBuilder;
 
@@ -42,6 +43,7 @@ struct Mesh {
     uint32_t indexCount{0};
     std::unique_ptr<VertexArray> vertexArray{};
     uint32_t attributeBits{0};
+    std::shared_ptr<Skeleton> skeleton;
 };
 
 
