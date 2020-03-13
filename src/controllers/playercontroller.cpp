@@ -7,6 +7,7 @@
 
 void PlayerController::OnInit(Node *target) {
     mAnimator = target->GetComponent<Animator>();
+    mRigidBody = target->GetComponent<RigidBody>();
 }
 
 void PlayerController::OnUpdate(Node *target, float dt) {
@@ -19,8 +20,13 @@ void PlayerController::OnUpdate(Node *target, float dt) {
     if(mag > 0.0f) {
         float angle = glm::atan(moveDirection.x, moveDirection.z);
         target->SetRotation(glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f)));
-        target->SetPosition(target->GetPosition() + moveDirection*6.0f*dt);
+        moveDirection*=6.0f;
+
+        //target->SetPosition(target->GetPosition() + moveDirection*6.0f*dt);
     }
+
+    auto rigidBody = mRigidBody.lock();
+    rigidBody->GetBody()->Move(moveDirection);
 
     auto animator = mAnimator.lock();
     animator->SetProperty("isMoving", mag > 0.0f);

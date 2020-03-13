@@ -8,6 +8,7 @@
 #include "controller.hpp"
 #include <graphics/node.hpp>
 #include <components/animator.hpp>
+#include <components/rigidbody.hpp>
 
 class PlayerController : public Controller {
 protected:
@@ -16,6 +17,7 @@ protected:
 
 private:
     std::weak_ptr<Animator> mAnimator;
+    std::weak_ptr<RigidBody> mRigidBody;
     glm::vec3 moveDirection{0.0f, 0.0f, 0.0f};
 };
 
