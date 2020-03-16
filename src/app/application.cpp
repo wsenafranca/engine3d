@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include "config.hpp"
+#include <graphics/gizmos.hpp>
 
 Application* Application::sThisApplication = nullptr;
 
@@ -77,16 +78,28 @@ int Application::Exec(int argc, char** argv) {
     Input::Connect();
     MessageManager::RegisterWindow(pWindow);
 
+    Gizmos::Init();
+
     OnCreate();
 
     //glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     double t0 = glfwGetTime();
     double t;
     float dt;
+    float elapsed = 0.0f;
+    int fps = 0;
     while(!glfwWindowShouldClose(pWindow)) {
         t = glfwGetTime();
         dt = (float)(t - t0);
         t0 = t;
+        fps++;
+        elapsed += dt;
+        if(elapsed > 1.0f) {
+            std::string title = mAppInfo->appName + " - FPS: " + std::to_string(fps);
+            glfwSetWindowTitle(pWindow, title.c_str());
+            fps = 0;
+            elapsed = 0.0f;
+        }
         glfwPollEvents();
         MessageManager::DispatchMessages();
         Input::Update();

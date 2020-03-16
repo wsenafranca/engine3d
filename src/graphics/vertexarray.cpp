@@ -21,16 +21,17 @@ void VertexArray::DisableAttrib(uint32_t index) {
     glDisableVertexAttribArray(index);
 }
 
-void VertexArray::SetAttribPointer(uint32_t index, int32_t size, uint32_t type, bool normalized) {
-    glVertexAttribPointer(index, size, type, normalized, 0, nullptr);
+void VertexArray::SetAttribPointer(uint32_t index, int32_t size, uint32_t type, bool normalized, uint32_t stride,
+                                   const void *pointer) {
+    glVertexAttribPointer(index, size, type, normalized, stride, pointer);
 }
 
-void VertexArray::SetAttribIPointer(uint32_t index, int32_t size, uint32_t type) {
-    glVertexAttribIPointer(index, size, type, 0, nullptr);
+void VertexArray::SetAttribIPointer(uint32_t index, int32_t size, uint32_t type, uint32_t stride, const void *pointer) {
+    glVertexAttribIPointer(index, size, type, stride, pointer);
 }
 
-void VertexArray::SetAttribLPointer(uint32_t index, int32_t size, uint32_t type) {
-    glVertexAttribLPointer(index, size, type, 0, nullptr);
+void VertexArray::SetAttribLPointer(uint32_t index, int32_t size, uint32_t type, uint32_t stride, const void *pointer) {
+    glVertexAttribLPointer(index, size, type, stride, pointer);
 }
 
 void VertexArray::Bind() {

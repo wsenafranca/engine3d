@@ -13,10 +13,12 @@
 #include <components/camera.hpp>
 #include <graphics/mesh.hpp>
 #include <graphics/meshbatch.hpp>
+#include <physics/physics.hpp>
 
 class Scene {
 public:
     Scene();
+    ~Scene();
     virtual void Update(float dt);
     virtual void Render(MeshBatch *batch);
 

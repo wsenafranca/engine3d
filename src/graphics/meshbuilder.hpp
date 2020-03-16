@@ -12,6 +12,7 @@ public:
     MeshBuilder& SetPositions(const std::vector<float>& positions);
     [[nodiscard]] const std::vector<float> &GetPositions() const;
 
+    MeshBuilder& GenNormals();
     MeshBuilder& SetNormals(const std::vector<float>& normals);
     [[nodiscard]] const std::vector<float> &GetNormals() const;
 
@@ -44,8 +45,11 @@ public:
     MeshBuilder& SetRenderMode(uint32_t mode);
     [[nodiscard]] uint32_t GetRenderMode() const;
 
+    [[nodiscard]] float GetTextureCoordScale() const;
+    MeshBuilder& SetTextureCoordScale(float textureCoordScale);
+
     MeshBuilder& SetQuad(float width, float height);
-    MeshBuilder& SetBox(const glm::vec3& size);
+    MeshBuilder& SetBox(const glm::vec3& extent);
     MeshBuilder& SetPlane(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4);
 
     std::shared_ptr<Mesh> Build();
@@ -65,6 +69,7 @@ private:
     uint32_t mRenderMode{4};
     bool mFlipTextureCoordX{false};
     bool mFlipTextureCoordY{true};
+    float mTextureCoordScale{1.0f};
 };
 
 #endif //ENGINE3D_SRC_MESHBUILDER_HPP

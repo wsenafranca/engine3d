@@ -16,6 +16,28 @@ const std::vector<float> &MeshBuilder::GetPositions() const {
     return mPositions;
 }
 
+MeshBuilder &MeshBuilder::GenNormals() {
+    auto vertices = (const glm::vec3*)mPositions.data();
+    std::vector<glm::vec3> normals(mPositions.size()/3, glm::vec3(0.0f));
+
+    for(size_t i = 0; i < mIndices.size(); i+=3) {
+        glm::vec3 p = glm::cross(vertices[mIndices[i+1]] - vertices[mIndices[i]], vertices[mIndices[i+2]] - vertices[mIndices[i]]);
+        normals[mIndices[i]] += p;
+        normals[mIndices[i+1]] += p;
+        normals[mIndices[i+2]] += p;
+    }
+
+    for(auto& normal : normals) {
+        normal = glm::normalize(normal);
+    }
+
+    mNormals = std::vector<float>(mPositions.size());
+    memcpy(mNormals.data(), normals.data(), sizeof(mNormals[0])*mNormals.size());
+
+    mAttributeBits |= ATTRIBUTE_NORMAL_BITS;
+    return *this;
+}
+
 MeshBuilder &MeshBuilder::SetNormals(const std::vector<float> &normals) {
     mNormals = normals;
     mAttributeBits |= ATTRIBUTE_NORMAL_BITS;
@@ -116,6 +138,15 @@ uint32_t MeshBuilder::GetRenderMode() const {
     return mRenderMode;
 }
 
+float MeshBuilder::GetTextureCoordScale() const {
+    return mTextureCoordScale;
+}
+
+MeshBuilder &MeshBuilder::SetTextureCoordScale(float textureCoordScale) {
+    mTextureCoordScale = textureCoordScale;
+    return *this;
+}
+
 std::shared_ptr<Mesh> MeshBuilder::Build() {
     auto mesh = std::make_shared<Mesh>();
 
@@ -152,6 +183,9 @@ std::shared_ptr<Mesh> MeshBuilder::Build() {
             for(size_t i = 1; i < mTexCoords.size(); i+=2) {
                 mTexCoords[i] = 1.0f - mTexCoords[i];
             }
+        }
+        for(size_t i = 1; i < mTexCoords.size(); i++) {
+            mTexCoords[i] = mTexCoords[i]*mTextureCoordScale;
         }
         buffer->SetData(mTexCoords.size()*sizeof(mTexCoords[0]), mTexCoords.data(), GL_STATIC_DRAW);
         mesh->vertexArray->EnableAttrib(ATTRIBUTE_TEXCOORD_INDEX);
@@ -212,8 +246,8 @@ MeshBuilder &MeshBuilder::SetQuad(float width, float height) {
     return *this;
 }
 
-MeshBuilder &MeshBuilder::SetBox(const glm::vec3& size) {
-    glm::vec3 s = size*0.5f;
+MeshBuilder &MeshBuilder::SetBox(const glm::vec3& extent) {
+    glm::vec3 s = extent;
     mPositions = {
             // back
             -s.x, -s.y, -s.z,
@@ -264,50 +298,6 @@ MeshBuilder &MeshBuilder::SetBox(const glm::vec3& size) {
             -s.x,  s.y,  s.z,
     };
 
-    mNormals = {
-            0.0f,  0.0f, -1.0f,
-            0.0f,  0.0f, -1.0f,
-            0.0f,  0.0f, -1.0f,
-            0.0f,  0.0f, -1.0f,
-            0.0f,  0.0f, -1.0f,
-            0.0f,  0.0f, -1.0f,
-
-            0.0f,  0.0f,  1.0f,
-            0.0f,  0.0f,  1.0f,
-            0.0f,  0.0f,  1.0f,
-            0.0f,  0.0f,  1.0f,
-            0.0f,  0.0f,  1.0f,
-            0.0f,  0.0f,  1.0f,
-
-            -1.0f,  0.0f,  0.0f,
-            -1.0f,  0.0f,  0.0f,
-            -1.0f,  0.0f,  0.0f,
-            -1.0f,  0.0f,  0.0f,
-            -1.0f,  0.0f,  0.0f,
-            -1.0f,  0.0f,  0.0f,
-
-            1.0f,  0.0f,  0.0f,
-            1.0f,  0.0f,  0.0f,
-            1.0f,  0.0f,  0.0f,
-            1.0f,  0.0f,  0.0f,
-            1.0f,  0.0f,  0.0f,
-            1.0f,  0.0f,  0.0f,
-
-            0.0f, -1.0f,  0.0f,
-            0.0f, -1.0f,  0.0f,
-            0.0f, -1.0f,  0.0f,
-            0.0f, -1.0f,  0.0f,
-            0.0f, -1.0f,  0.0f,
-            0.0f, -1.0f,  0.0f,
-
-            0.0f,  1.0f,  0.0f,
-            0.0f,  1.0f,  0.0f,
-            0.0f,  1.0f,  0.0f,
-            0.0f,  1.0f,  0.0f,
-            0.0f,  1.0f,  0.0f,
-            0.0f,  1.0f,  0.0f,
-    };
-
     mTexCoords = {
             0.0f, 0.0f,
             1.0f, 1.0f,
@@ -351,10 +341,12 @@ MeshBuilder &MeshBuilder::SetBox(const glm::vec3& size) {
             0.0f, 1.0f,
             0.0f, 0.0f
     };
-    mAttributeBits = ATTRIBUTE_POSITION_BITS|ATTRIBUTE_TEXCOORD_BITS|ATTRIBUTE_NORMAL_BITS;
+    mAttributeBits = ATTRIBUTE_POSITION_BITS|ATTRIBUTE_TEXCOORD_BITS;
 
     mIndices.resize(36);
     std::iota(mIndices.begin(), mIndices.end(), 0);
+
+    GenNormals();
 
     return *this;
 }
@@ -379,24 +371,9 @@ MeshBuilder &MeshBuilder::SetPlane(const glm::vec3 &p1, const glm::vec3 &p2, con
             2, 3, 0
     };
 
-    std::vector<glm::vec3> vertices{p1, p2, p3, p4};
-    std::vector<glm::vec3> normals{glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f)};
+    GenNormals();
 
-    for(size_t i = 0; i < mIndices.size(); i+=3) {
-        glm::vec3 p = glm::cross(vertices[mIndices[i+1]] - vertices[mIndices[i]], vertices[mIndices[i+2]] - vertices[mIndices[i]]);
-        normals[mIndices[i]] += p;
-        normals[mIndices[i+1]] += p;
-        normals[mIndices[i+2]] += p;
-    }
-
-    for(auto& normal : normals) {
-        normal = glm::normalize(normal);
-    }
-
-    mNormals = std::vector<float>(12);
-    memcpy(mNormals.data(), normals.data(), sizeof(mNormals[0])*mNormals.size());
-
-    mAttributeBits = ATTRIBUTE_POSITION_BITS|ATTRIBUTE_TEXCOORD_BITS|ATTRIBUTE_NORMAL_BITS;
+    mAttributeBits = ATTRIBUTE_POSITION_BITS|ATTRIBUTE_TEXCOORD_BITS;
 
     return *this;
 }

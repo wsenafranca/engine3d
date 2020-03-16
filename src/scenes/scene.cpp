@@ -6,9 +6,15 @@
 #include <graphics/meshbatch.hpp>
 
 Scene::Scene() : mRoot(new Node()) {
+    Physics::CreateWorld();
+}
+
+Scene::~Scene() {
+    Physics::DestroyWorld();
 }
 
 void Scene::Update(float dt) {
+    Physics::Update(Physics::FIXED_DELTA_TIME);
     mRoot->Update(dt);
 }
 
